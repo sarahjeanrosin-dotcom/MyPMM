@@ -1,0 +1,23 @@
+export const defaultRelease = {
+  productName: '',
+  releaseDate: '',
+  relatedReleases: '',
+  productSuite: '',
+  productInformation: '',
+  tierLevel: 'Tier 2',
+  uploadedFiles: [],
+  roadmapItems: [
+    { id: 1, title: '', description: '', status: 'foundation', releaseDate: '', featureNoteUrl: '', isReleased: true },
+    { id: 2, title: '', description: '', status: 'current', releaseDate: '', featureNoteUrl: '', isReleased: false },
+    { id: 3, title: '', description: '', status: 'future', releaseDate: '', featureNoteUrl: '', isReleased: false },
+  ],
+  endUserWhat: '',
+  endUserWho: '',
+  endUserWhy: '',
+  partnerWhat: '',
+  partnerWho: '',
+  partnerWhy: '',
+  additionalResources: '',
+  generatedProductBrief: null,
+  generatedMarketingPlaybook: null,
+};

@@ -1,0 +1,229 @@
+import { useState } from 'react';
+import { GeneaLogoWhite } from './BrandTheme';
+
+const channelColors = {
+  LinkedIn: { bg: 'bg-[#0077B5]', light: 'bg-blue-50', border: 'border-[#0077B5]/30', text: 'text-[#0077B5]', badge: 'bg-[#0077B5]' },
+  Instagram: { bg: 'bg-gradient-to-r from-purple-600 to-pink-500', light: 'bg-pink-50', border: 'border-pink-300/40', text: 'text-pink-600', badge: 'bg-gradient-to-r from-purple-600 to-pink-500' },
+  YouTube: { bg: 'bg-red-600', light: 'bg-red-50', border: 'border-red-200', text: 'text-red-600', badge: 'bg-red-600' },
+};
+
+const channelIcons = {
+  LinkedIn: (
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+    </svg>
+  ),
+  Instagram: (
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+    </svg>
+  ),
+  YouTube: (
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/>
+    </svg>
+  ),
+};
+
+function EditableField({ value, onChange, multiline = false, placeholder = '', className = '' }) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    if (multiline) {
+      return (
+        <textarea
+          autoFocus
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onBlur={() => setEditing(false)}
+          placeholder={placeholder}
+          rows={5}
+          className={`w-full border border-genea-bright rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-genea-bright resize-none bg-white ${className}`}
+        />
+      );
+    }
+    return (
+      <input
+        autoFocus
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onBlur={() => setEditing(false)}
+        placeholder={placeholder}
+        className={`w-full border border-genea-bright rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-genea-bright bg-white ${className}`}
+      />
+    );
+  }
+
+  return (
+    <span
+      onClick={() => setEditing(true)}
+      title="Click to edit"
+      className={`cursor-pointer hover:bg-white/60 rounded px-1 -mx-1 transition-colors group inline-block ${className}`}
+    >
+      {value || <span className="text-gray-400 italic text-sm">{placeholder || 'Click to edit...'}</span>}
+      <svg className="w-3 h-3 text-genea-bright opacity-0 group-hover:opacity-100 inline-block ml-1 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+      </svg>
+    </span>
+  );
+}
+
+const tierBadgeStyle = {
+  'Tier 1': 'bg-red-500 text-white',
+  'Tier 2': 'bg-genea-bright text-white',
+  'Tier 3': 'bg-green-500 text-white',
+  'Tier 4': 'bg-gray-500 text-white',
+};
+
+function FieldRow({ label, value, onChange, multiline = false, placeholder = '', boxStyle = '' }) {
+  return (
+    <div className="mb-4">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className="text-xs font-bold text-genea-navy uppercase tracking-widest">{label}</span>
+      </div>
+      <div className={`rounded-lg px-4 py-3 text-sm text-gray-700 ${boxStyle || 'bg-gray-50 border border-gray-200'}`}>
+        <EditableField value={value} onChange={onChange} multiline={multiline} placeholder={placeholder} />
+      </div>
+    </div>
+  );
+}
+
+function ChannelCard({ channelName, channelData, onChannelChange }) {
+  const colors = channelColors[channelName] || channelColors.LinkedIn;
+
+  function update(field, value) {
+    onChannelChange({ ...channelData, [field]: value });
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+      {/* Channel Header */}
+      <div className={`${colors.bg} px-6 py-4 flex items-center justify-between`}>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center text-white">
+            {channelIcons[channelName]}
+          </div>
+          <h3 className="text-white font-bold text-lg">{channelName}</h3>
+        </div>
+        <span className="text-white/70 text-xs font-medium uppercase tracking-wider">Channel Playbook</span>
+      </div>
+
+      <div className="p-6">
+        {/* Headline */}
+        <div className="mb-4">
+          <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Headline</p>
+          <div className="bg-genea-light rounded-lg px-4 py-3">
+            <p className={`font-bold text-base ${colors.text}`}>
+              <EditableField value={channelData.headline} onChange={v => update('headline', v)} placeholder="Headline..." className="font-bold text-base" />
+            </p>
+          </div>
+        </div>
+
+        {/* Post Copy */}
+        <div className="mb-4">
+          <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Post Copy</p>
+          <div className={`rounded-lg border-l-4 px-4 py-3 ${colors.light} ${colors.border}`} style={{ borderLeftColor: '' }}>
+            <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              <EditableField value={channelData.copy} onChange={v => update('copy', v)} multiline placeholder="Post copy..." />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* CTA */}
+          <div>
+            <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Call to Action</p>
+            <div className="bg-genea-navy/5 rounded-lg px-4 py-3 border border-genea-navy/10">
+              <p className={`text-sm font-semibold ${colors.text}`}>
+                <EditableField value={channelData.cta} onChange={v => update('cta', v)} placeholder="CTA text..." />
+              </p>
+            </div>
+          </div>
+
+          {/* Visual Direction */}
+          <div>
+            <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Visual Direction</p>
+            <div className="bg-yellow-50 rounded-lg px-4 py-3 border border-yellow-200">
+              <p className="text-sm text-yellow-800">
+                <EditableField value={channelData.visualDirection} onChange={v => update('visualDirection', v)} multiline placeholder="Visual direction..." />
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Audience Notes */}
+        <div className="mt-4">
+          <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Audience Notes</p>
+          <div className="bg-green-50 rounded-lg px-4 py-3 border border-green-200">
+            <p className="text-sm text-green-800">
+              <EditableField value={channelData.audienceNotes} onChange={v => update('audienceNotes', v)} multiline placeholder="Audience notes..." />
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function MarketingPlaybookPreview({ content, onContentChange }) {
+  function updateChannel(channelName, channelData) {
+    onContentChange({
+      ...content,
+      channels: {
+        ...content.channels,
+        [channelName]: channelData,
+      },
+    });
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+      {/* Document Header */}
+      <div className="bg-genea-navy px-8 py-5 flex items-center justify-between">
+        <GeneaLogoWhite size="md" />
+        <div className="text-right">
+          <p className="text-blue-200 text-xs font-medium uppercase tracking-widest">Marketing Playbook</p>
+          <p className="text-white/60 text-xs mt-0.5">Confidential</p>
+        </div>
+      </div>
+      <div className="h-1 bg-genea-bright" />
+
+      <div className="p-8">
+        {/* Title Block */}
+        <div className="bg-genea-navy rounded-xl p-6 mb-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-genea-bright/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="relative">
+            <h1 className="text-2xl font-extrabold text-white leading-tight mb-3">
+              {content.title?.replace('Marketing Playbook: ', '') || 'Marketing Playbook'}
+            </h1>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ${tierBadgeStyle[content.tier] || 'bg-genea-bright text-white'}`}>
+                {content.tier}
+              </span>
+              <span className="text-blue-300 text-xs">
+                Generated {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Channel Cards */}
+        {content.channels && Object.entries(content.channels).map(([channelName, channelData]) => (
+          <ChannelCard
+            key={channelName}
+            channelName={channelName}
+            channelData={channelData}
+            onChannelChange={data => updateChannel(channelName, data)}
+          />
+        ))}
+
+        {/* Footer */}
+        <div className="border-t border-gray-200 pt-4 mt-2 flex items-center justify-between">
+          <p className="text-xs text-gray-400">© Genea Security — Confidential & Proprietary</p>
+          <p className="text-xs text-gray-400">Marketing Playbook</p>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,23 @@
+export const sampleRelease = {
+  productName: 'Genea Mobile Credential 3.0',
+  releaseDate: '2026-06-15',
+  relatedReleases: 'Genea Access Control 5.2, Visitor Management 2.1',
+  productSuite: 'Genea Access Control',
+  productInformation: `Genea Mobile Credential 3.0 introduces next-generation tap-to-unlock using ultra-wideband (UWB) technology. Users can now unlock doors hands-free as they approach, with zero friction. The update also adds Apple Watch support, enhanced anti-passback controls, and a new admin dashboard for credential lifecycle management. This release targets enterprise customers managing large facilities with high foot traffic.`,
+  tierLevel: 'Tier 1',
+  uploadedFiles: [],
+  roadmapItems: [
+    { id: 1, title: 'BLE Credential 2.0', description: 'Bluetooth Low Energy tap-to-unlock foundation', status: 'foundation', releaseDate: '2025-09-01', featureNoteUrl: 'https://help.getgenea.com/ble-credential-2', isReleased: true },
+    { id: 2, title: 'Mobile Credential 3.0', description: 'UWB hands-free unlock + Apple Watch support', status: 'current', releaseDate: '2026-06-15', featureNoteUrl: '', isReleased: false },
+    { id: 3, title: 'Biometric Tap & Go', description: 'FaceID + UWB combined unlock experience', status: 'future', releaseDate: '2026-Q4', featureNoteUrl: '', isReleased: false },
+  ],
+  endUserWhat: 'Hands-free door unlock using UWB technology on iPhone and Apple Watch',
+  endUserWho: 'Enterprise employees at large campuses and office buildings',
+  endUserWhy: 'Eliminates friction at access points — no need to reach for your phone or badge',
+  partnerWhat: 'UWB reader SDK integration and credential lifecycle management APIs',
+  partnerWho: 'Physical security integrators, building automation partners, MDM providers',
+  partnerWhy: 'Enables premium seamless access experiences for enterprise deployments',
+  additionalResources: `Help Center: https://help.getgenea.com/mobile-credential-3\nRelease Notes: https://getgenea.com/release-notes/mc3\nProduct Video: https://youtube.com/genea/mc3-overview`,
+  generatedProductBrief: null,
+  generatedMarketingPlaybook: null,
+};
