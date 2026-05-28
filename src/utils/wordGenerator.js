@@ -1,8 +1,8 @@
 import {
-  Document, Packer, Paragraph, TextRun, HeadingLevel,
+  Document, Packer, Paragraph, TextRun,
   Table, TableRow, TableCell, WidthType, BorderStyle,
   AlignmentType, ShadingType, Header, Footer, PageNumber,
-  Hyperlink, ExternalHyperlink,
+  ExternalHyperlink,
 } from 'docx';
 
 const NAVY_HEX  = '003865';
