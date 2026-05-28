@@ -1,5 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
-
 export default async function handler(req, context) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
@@ -26,14 +24,14 @@ RAW INPUT:
 ${rawText}
 """
 
-Return ONLY valid JSON — no markdown, no explanation. Be concise in every field.
+Return ONLY valid JSON — no markdown, no code blocks, no explanation. Be concise in every field.
 
 {
   "productName": "Product or feature name, extracted exactly as stated",
   "releaseDate": "Release date if mentioned, else empty string. Format: YYYY-MM-DD or e.g. 2026-Q3",
   "productSuite": "Genea product suite (e.g. Genea Access Control, Genea Video Management). Infer if not stated.",
   "relatedReleases": "Comma-separated related products or prior versions mentioned",
-  "productInformation": "2-3 paragraph polished summary written for a sales audience. Highlight what is new, what problem it solves, why it matters. Do NOT copy-paste — rewrite professionally.",
+  "productInformation": "2-3 paragraph polished summary written for a sales audience. Highlight what is new, what problem it solves, why it matters. Rewrite professionally — do not copy-paste.",
   "roadmapItems": [
     { "id": 1, "title": "Prior feature that laid the foundation", "description": "One sentence", "status": "foundation", "releaseDate": "", "featureNoteUrl": "", "isReleased": true },
     { "id": 2, "title": "This release name", "description": "One sentence", "status": "current", "releaseDate": "", "featureNoteUrl": "", "isReleased": false },
@@ -46,19 +44,33 @@ Return ONLY valid JSON — no markdown, no explanation. Be concise in every fiel
   "partnerWho": "1-2 sentences: which types of partners this is relevant to",
   "partnerWhy": "1-2 sentences: the business case for partners",
   "additionalResources": "Any URLs or resources mentioned, one per line",
-  "missingFields": ["list any field names that could not be determined"]
+  "missingFields": []
 }`;
 
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1200,
-      messages: [{ role: 'user', content: prompt }],
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
 
-    const text = message.content[0].text.trim();
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return new Response(JSON.stringify({ error: err.error?.message || `Anthropic API error ${response.status}` }), { status: 502 });
+    }
+
+    const data = await response.json();
+    const text = data.content[0].text.trim();
     const result = JSON.parse(text.replace(/^```json\n?/, '').replace(/\n?```$/, ''));
+
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

@@ -1,29 +1,18 @@
-import Anthropic from '@anthropic-ai/sdk';
-
 export default async function handler(req, context) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API key not configured.' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: 'API key not configured.' }), { status: 500 });
   }
 
   let body;
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid request body.' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: 'Invalid request body.' }), { status: 400 });
   }
 
   const { productName, productSuite, releaseDate, productInformation } = body;
@@ -36,7 +25,7 @@ Release Date: ${releaseDate}
 Product Information:
 ${productInformation}
 
-Return ONLY valid JSON in exactly this structure, no markdown, no explanation:
+Return ONLY valid JSON — no markdown, no code blocks, no explanation:
 {
   "endUser": {
     "what": "1-2 sentences: what this feature is from the end user perspective",
@@ -51,22 +40,34 @@ Return ONLY valid JSON in exactly this structure, no markdown, no explanation:
 }`;
 
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 600,
-      messages: [{ role: 'user', content: prompt }],
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
 
-    const result = JSON.parse(message.content[0].text.trim());
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return new Response(JSON.stringify({ error: err.error?.message || `Anthropic API error ${response.status}` }), { status: 502 });
+    }
+
+    const data = await response.json();
+    const text = data.content[0].text.trim();
+    const result = JSON.parse(text.replace(/^```json\n?/, '').replace(/\n?```$/, ''));
+
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message || 'Generation failed.' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: err.message || 'Generation failed.' }), { status: 500 });
   }
 }

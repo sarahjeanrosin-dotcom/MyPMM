@@ -1,5 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
-
 export default async function handler(req, context) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
@@ -28,7 +26,7 @@ Tier: ${tierLevel}
 Summary: ${productInformation}
 End User Value: ${endUserWhy}
 
-Return ONLY valid JSON, no markdown:
+Return ONLY valid JSON — no markdown, no code blocks, no explanation:
 
 {
   "LinkedIn": {
@@ -42,7 +40,7 @@ Return ONLY valid JSON, no markdown:
     "headline": "Short punchy hook, under 10 words",
     "copy": "Complete Instagram caption, 80-150 words. Punchy, benefit-led, conversational. End with hashtags.",
     "cta": "Call-to-action text",
-    "visualDirection": "1-2 sentences on format and style (Reel, carousel, static).",
+    "visualDirection": "1-2 sentences on format and style.",
     "audienceNotes": "1-2 sentences on target audience and positioning."
   },
   "YouTube": {
@@ -55,15 +53,29 @@ Return ONLY valid JSON, no markdown:
 }`;
 
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1200,
-      messages: [{ role: 'user', content: prompt }],
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
 
-    const text = message.content[0].text.trim();
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return new Response(JSON.stringify({ error: err.error?.message || `Anthropic API error ${response.status}` }), { status: 502 });
+    }
+
+    const data = await response.json();
+    const text = data.content[0].text.trim();
     const result = JSON.parse(text.replace(/^```json\n?/, '').replace(/\n?```$/, ''));
+
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
