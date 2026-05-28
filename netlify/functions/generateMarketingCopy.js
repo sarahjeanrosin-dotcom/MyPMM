@@ -62,8 +62,11 @@ Return ONLY valid JSON — no markdown, no code blocks, no explanation:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1200,
-        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1800,
+        messages: [
+          { role: 'user', content: prompt },
+          { role: 'assistant', content: '{' },
+        ],
       }),
     });
 
@@ -73,7 +76,7 @@ Return ONLY valid JSON — no markdown, no code blocks, no explanation:
     }
 
     const data = await response.json();
-    const text = data.content[0].text.trim();
+    const text = ('{' + data.content[0].text).trim();
     const result = JSON.parse(text.replace(/^```json\n?/, '').replace(/\n?```$/, ''));
 
     return new Response(JSON.stringify(result), {

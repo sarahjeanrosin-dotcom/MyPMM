@@ -31,7 +31,7 @@ Return ONLY valid JSON — no markdown, no code blocks, no explanation. Be conci
   "releaseDate": "Release date if mentioned, else empty string. Format: YYYY-MM-DD or e.g. 2026-Q3",
   "productSuite": "Genea product suite (e.g. Genea Access Control, Genea Video Management). Infer if not stated.",
   "relatedReleases": "Comma-separated related products or prior versions mentioned",
-  "productInformation": "2-3 paragraph polished summary written for a sales audience. Highlight what is new, what problem it solves, why it matters. Rewrite professionally — do not copy-paste.",
+  "productInformation": "1 concise paragraph (4-6 sentences) written for a sales audience. Highlight what is new, what problem it solves, why it matters. Rewrite professionally.",
   "roadmapItems": [
     { "id": 1, "title": "Prior feature that laid the foundation", "description": "One sentence", "status": "foundation", "releaseDate": "", "featureNoteUrl": "", "isReleased": true },
     { "id": 2, "title": "This release name", "description": "One sentence", "status": "current", "releaseDate": "", "featureNoteUrl": "", "isReleased": false },
@@ -57,8 +57,11 @@ Return ONLY valid JSON — no markdown, no code blocks, no explanation. Be conci
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1200,
-        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1800,
+        messages: [
+          { role: 'user', content: prompt },
+          { role: 'assistant', content: '{' },
+        ],
       }),
     });
 
@@ -68,7 +71,7 @@ Return ONLY valid JSON — no markdown, no code blocks, no explanation. Be conci
     }
 
     const data = await response.json();
-    const text = data.content[0].text.trim();
+    const text = ('{' + data.content[0].text).trim();
     const result = JSON.parse(text.replace(/^```json\n?/, '').replace(/\n?```$/, ''));
 
     return new Response(JSON.stringify(result), {
