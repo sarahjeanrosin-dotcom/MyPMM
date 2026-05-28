@@ -18,6 +18,7 @@ export const defaultRelease = {
   partnerWho: '',
   partnerWhy: '',
   additionalResources: '',
+  marketingCopy: null,
   generatedProductBrief: null,
   generatedMarketingPlaybook: null,
 };

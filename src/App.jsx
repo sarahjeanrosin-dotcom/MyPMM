@@ -4,6 +4,7 @@ import { sampleRelease } from './data/sampleData';
 import { detectMissingInfo } from './utils/missingInfoDetector';
 import { generateProductBriefContent, generateMarketingPlaybookContent } from './utils/contentGenerator';
 import ReleaseIntakeForm from './components/ReleaseIntakeForm';
+import RawInputScreen from './components/RawInputScreen';
 import MissingInfoQuestions from './components/MissingInfoQuestions';
 import ProductBriefPreview from './components/ProductBriefPreview';
 import MarketingPlaybookPreview from './components/MarketingPlaybookPreview';
@@ -386,7 +387,14 @@ export default function App() {
     setRelease({ ...defaultRelease });
     setBriefContent(null);
     setPlaybookContent(null);
-    setView('intake');
+    setView('input');
+  }
+
+  function handleProcessed(populated) {
+    setRelease(r => ({ ...defaultRelease, ...populated }));
+    setBriefContent(null);
+    setPlaybookContent(null);
+    setView('review');
   }
 
   function handleLoadSample() {
@@ -452,6 +460,13 @@ export default function App() {
       <TopNav view={view} onStartOver={handleStartOver} />
 
       <main className="flex-1">
+        {view === 'input' && (
+          <RawInputScreen
+            onProcessed={handleProcessed}
+            onManual={() => setView('intake')}
+          />
+        )}
+
         {view === 'intake' && (
           <div className="px-4 py-8">
             <ReleaseIntakeForm
