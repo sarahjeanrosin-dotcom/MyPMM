@@ -3,6 +3,7 @@ import { defaultRelease } from './data/releaseModel';
 import { sampleRelease } from './data/sampleData';
 import { detectMissingInfo } from './utils/missingInfoDetector';
 import { generateProductBriefContent, generateMarketingPlaybookContent } from './utils/contentGenerator';
+import { generateMarketingCopy } from './utils/aiGenerator';
 import ReleaseIntakeForm from './components/ReleaseIntakeForm';
 import RawInputScreen from './components/RawInputScreen';
 import MissingInfoQuestions from './components/MissingInfoQuestions';
@@ -409,13 +410,25 @@ export default function App() {
     setView('review');
   }
 
-  function handleGenerate() {
-    const brief = generateProductBriefContent(release);
-    const playbook = generateMarketingPlaybookContent(release);
-    setBriefContent(brief);
-    setPlaybookContent(playbook);
-    setRelease(r => ({ ...r, generatedProductBrief: brief, generatedMarketingPlaybook: playbook }));
-    setView('documents');
+  async function handleGenerate() {
+    setView('generating');
+    try {
+      let releaseWithCopy = release;
+      if (!release.marketingCopy) {
+        const copy = await generateMarketingCopy(release);
+        releaseWithCopy = { ...release, marketingCopy: copy };
+        setRelease(releaseWithCopy);
+      }
+      const brief = generateProductBriefContent(releaseWithCopy);
+      const playbook = generateMarketingPlaybookContent(releaseWithCopy);
+      setBriefContent(brief);
+      setPlaybookContent(playbook);
+      setRelease(r => ({ ...releaseWithCopy, generatedProductBrief: brief, generatedMarketingPlaybook: playbook }));
+      setView('documents');
+    } catch (err) {
+      alert('Failed to generate marketing copy: ' + (err.message || 'Unknown error'));
+      setView('review');
+    }
   }
 
   function handleBriefChange(updated) {
@@ -474,6 +487,17 @@ export default function App() {
               onChange={setRelease}
               onFinish={handleIntakeFinish}
             />
+          </div>
+        )}
+
+        {view === 'generating' && (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <svg className="w-10 h-10 text-genea-bright animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+            <p className="text-genea-navy font-semibold text-lg">Generating your documents...</p>
+            <p className="text-gray-400 text-sm">Writing social copy for LinkedIn, Instagram, and YouTube</p>
           </div>
         )}
 
