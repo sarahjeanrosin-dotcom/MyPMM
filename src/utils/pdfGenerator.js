@@ -1,614 +1,528 @@
 import { jsPDF } from 'jspdf';
 
-const NAVY = [10, 47, 107];
-const BLUE = [21, 101, 192];
-const BRIGHT_BLUE = [33, 150, 243];
-const LIGHT_BLUE = [227, 242, 253];
-const WHITE = [255, 255, 255];
-const DARK_GRAY = [30, 41, 59];
-const MID_GRAY = [100, 116, 139];
-const LIGHT_GRAY = [241, 245, 249];
-const BORDER_GRAY = [226, 232, 240];
+// Genea brand colors (RGB)
+const NAVY    = [0, 56, 101];    // #003865
+const BLUE    = [21, 101, 192];
+const BRIGHT  = [33, 150, 243];
+const LIGHT   = [227, 242, 253];
+const WHITE   = [255, 255, 255];
+const DARK    = [30, 41, 59];
+const GRAY    = [100, 116, 139];
+const LGRAY   = [241, 245, 249];
+const BORDER  = [226, 232, 240];
 
-function addPageHeader(doc, subtitle) {
-  // Navy header bar
+const PAGE_W  = 210;
+const MARGIN  = 14;
+const CONTENT = PAGE_W - MARGIN * 2;  // 182mm
+
+// ─── Helpers ────────────────────────────────────────────────────
+
+function header(doc, subtitle) {
   doc.setFillColor(...NAVY);
-  doc.rect(0, 0, 210, 22, 'F');
+  doc.rect(0, 0, PAGE_W, 20, 'F');
+  doc.setFillColor(...BRIGHT);
+  doc.rect(0, 20, PAGE_W, 1.5, 'F');
 
-  // GENEA logo text
-  doc.setTextColor(...WHITE);
+  // Logo text (real SVG can't render in jsPDF without canvas; polished text logo instead)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text('GENEA', 14, 14);
+  doc.setFontSize(13);
+  doc.setTextColor(...WHITE);
+  doc.text('GENEA', MARGIN, 13);
 
-  // Subtitle
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(180, 210, 255);
-  doc.text(subtitle, 14, 19.5);
-
-  // Accent line
-  doc.setFillColor(...BRIGHT_BLUE);
-  doc.rect(0, 22, 210, 1.5, 'F');
-}
-
-function addPageFooter(doc, pageNum, totalPages) {
-  const y = 285;
-  doc.setFillColor(...LIGHT_GRAY);
-  doc.rect(0, y - 3, 210, 15, 'F');
-
-  doc.setTextColor(...MID_GRAY);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('© Genea Security — Confidential', 14, y + 5);
-  doc.text(`Page ${pageNum} of ${totalPages}`, 196, y + 5, { align: 'right' });
-
-  doc.setDrawColor(...BORDER_GRAY);
-  doc.line(14, y - 3, 196, y - 3);
+  doc.setTextColor(180, 210, 255);
+  doc.text(subtitle, MARGIN + 30, 13);
 }
 
-function wrapText(doc, text, x, y, maxWidth, lineHeight) {
-  const lines = doc.splitTextToSize(text || '', maxWidth);
-  doc.text(lines, x, y);
-  return y + lines.length * lineHeight;
+function footer(doc, pageNum, total) {
+  const fy = 287;
+  doc.setDrawColor(...BORDER);
+  doc.setLineWidth(0.3);
+  doc.line(MARGIN, fy, PAGE_W - MARGIN, fy);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GRAY);
+  doc.text('© Genea Security — Confidential', MARGIN, fy + 4.5);
+  doc.text(`${pageNum} / ${total}`, PAGE_W - MARGIN, fy + 4.5, { align: 'right' });
 }
 
-function sectionBox(doc, title, y, color = NAVY) {
-  doc.setFillColor(...color);
-  doc.rect(14, y, 182, 8, 'F');
-  doc.setTextColor(...WHITE);
+function sectionHeading(doc, title, y) {
+  doc.setFillColor(...NAVY);
+  doc.roundedRect(MARGIN, y, CONTENT, 7.5, 1, 1, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text(title.toUpperCase(), 18, y + 5.5);
+  doc.setFontSize(8.5);
+  doc.setTextColor(...WHITE);
+  doc.text(title.toUpperCase(), MARGIN + 4, y + 5.2);
   return y + 10;
 }
 
-function labelValue(doc, label, value, x, y, maxWidth = 80) {
+function subLabel(doc, label, y, color = NAVY) {
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...NAVY);
-  doc.text(label, x, y);
+  doc.setFontSize(7.5);
+  doc.setTextColor(...color);
+  doc.text(label, MARGIN, y);
+  return y + 4.5;
+}
 
+function bodyText(doc, text, x, y, maxW) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  const lines = doc.splitTextToSize(value || '—', maxWidth);
-  doc.text(lines, x, y + 4.5);
-  return y + 4.5 + lines.length * 4.5;
+  doc.setTextColor(...DARK);
+  const lines = doc.splitTextToSize(text || '—', maxW);
+  doc.text(lines, x, y);
+  return y + lines.length * 4.8;
 }
+
+function checkPage(doc, y, needed = 30) {
+  if (y + needed > 275) {
+    doc.addPage();
+    return 28;
+  }
+  return y;
+}
+
+// ─── Product Brief PDF ───────────────────────────────────────────
 
 export function generateProductBriefPdf(content) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  let currentPage = 1;
 
-  // --- PAGE 1 ---
-  addPageHeader(doc, 'Product Brief');
+  // ── Page 1 header ──
+  header(doc, 'Product Brief for Sales');
+  let y = 26;
 
   // Title block
-  doc.setFillColor(...LIGHT_BLUE);
-  doc.rect(14, 28, 182, 28, 'F');
-  doc.setDrawColor(...BRIGHT_BLUE);
-  doc.setLineWidth(0.5);
-  doc.rect(14, 28, 182, 28);
+  doc.setFillColor(...LIGHT);
+  doc.roundedRect(MARGIN, y, CONTENT, 26, 2, 2, 'F');
+  doc.setDrawColor(...BRIGHT);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(MARGIN, y, CONTENT, 26, 2, 2, 'S');
+  // Left accent bar
+  doc.setFillColor(...NAVY);
+  doc.roundedRect(MARGIN, y, 3, 26, 1, 1, 'F');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
+  doc.setFontSize(16);
   doc.setTextColor(...NAVY);
-  const titleLines = doc.splitTextToSize(content.title.replace('Product Brief: ', ''), 170);
-  doc.text(titleLines, 20, 38);
+  const titleLines = doc.splitTextToSize(content.title.replace('Product Brief: ', ''), CONTENT - 12);
+  doc.text(titleLines, MARGIN + 7, y + 8);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...MID_GRAY);
-  doc.text(`Product Suite: ${content.productSuite || '—'}`, 20, 38 + titleLines.length * 8);
+  doc.setFontSize(8.5);
+  doc.setTextColor(...GRAY);
+  doc.text(`${content.productSuite || ''}  ·  Released: ${content.releaseDate || 'TBD'}`, MARGIN + 7, y + 8 + titleLines.length * 7 + 1);
 
-  let y = 62;
+  y += 30;
 
-  // Meta info row
-  doc.setFillColor(...WHITE);
-  doc.setDrawColor(...BORDER_GRAY);
-  doc.setLineWidth(0.3);
-  doc.rect(14, y, 182, 20, 'FD');
+  // Meta row (related releases + help center)
+  if (content.relatedReleases || content.helpCenterUrl) {
+    doc.setFillColor(...LGRAY);
+    doc.roundedRect(MARGIN, y, CONTENT, 14, 1, 1, 'F');
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...NAVY);
-  doc.text('RELEASE DATE', 20, y + 6);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  doc.text(content.releaseDate || '—', 20, y + 12);
+    if (content.relatedReleases) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...NAVY);
+      doc.text('RELATED RELEASES', MARGIN + 4, y + 5);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...DARK);
+      const relLines = doc.splitTextToSize(content.relatedReleases, 85);
+      doc.text(relLines, MARGIN + 4, y + 10);
+    }
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...NAVY);
-  doc.text('RELATED RELEASES', 80, y + 6);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  const relLines = doc.splitTextToSize(content.relatedReleases || '—', 108);
-  doc.text(relLines, 80, y + 12);
+    if (content.helpCenterUrl) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...NAVY);
+      doc.text('HELP CENTER', MARGIN + 100, y + 5);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...BRIGHT);
+      const urlDisplay = content.helpCenterUrl.length > 45 ? content.helpCenterUrl.slice(0, 43) + '…' : content.helpCenterUrl;
+      doc.textWithLink(urlDisplay, MARGIN + 100, y + 10, { url: content.helpCenterUrl });
+    }
 
-  y += 26;
+    y += 18;
+  }
 
   // Product Summary
-  y = sectionBox(doc, 'Product Summary', y);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  const summaryLines = doc.splitTextToSize(content.summary || '', 178);
-  doc.text(summaryLines, 16, y + 5);
-  y = y + 5 + summaryLines.length * 4.5 + 8;
+  y = sectionHeading(doc, 'Product Summary', y);
+  y = bodyText(doc, content.summary, MARGIN, y, CONTENT) + 6;
 
-  // Product Roadmap section
-  if (y > 200) {
-    doc.addPage();
-    currentPage++;
-    addPageHeader(doc, 'Product Brief');
-    y = 30;
+  // ── Roadmap ──
+  y = checkPage(doc, y, 50);
+  if (y === 28) header(doc, 'Product Brief for Sales');
+
+  y = sectionHeading(doc, 'Product Roadmap', y);
+  y += 4;
+
+  const items = (content.roadmapItems || []).slice(0, 6);
+  if (items.length > 0) {
+    const tlLeft  = MARGIN + 4;
+    const tlRight = PAGE_W - MARGIN - 4;
+    const tlW     = tlRight - tlLeft;
+    const tlY     = y + 14; // center of the horizontal line
+
+    // Draw timeline line
+    doc.setDrawColor(...BORDER);
+    doc.setLineWidth(1.2);
+    doc.line(tlLeft, tlY, tlRight, tlY);
+
+    items.forEach((item, idx) => {
+      const frac  = items.length === 1 ? 0.5 : idx / (items.length - 1);
+      const dotX  = tlLeft + frac * tlW;
+      const isCur = item.status === 'current';
+      const isFnd = item.status === 'foundation';
+
+      // Dot
+      if (isCur) {
+        doc.setFillColor(...BRIGHT);
+        doc.circle(dotX, tlY, 4.5, 'F');
+        doc.setFillColor(...WHITE);
+        doc.circle(dotX, tlY, 2, 'F');
+      } else if (isFnd) {
+        doc.setFillColor(...NAVY);
+        doc.circle(dotX, tlY, 3, 'F');
+      } else {
+        doc.setFillColor(...LIGHT);
+        doc.setDrawColor(...BRIGHT);
+        doc.setLineWidth(0.7);
+        doc.circle(dotX, tlY, 3, 'FD');
+      }
+
+      // Date above dot (straight, small)
+      if (item.releaseDate) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(...GRAY);
+        doc.text(item.releaseDate, dotX, tlY - 7, { align: 'center' });
+      }
+
+      // Title below dot — slanted 40° to prevent overlap
+      const shortTitle = item.title
+        ? (item.title.length > 24 ? item.title.slice(0, 22) + '…' : item.title)
+        : '—';
+      doc.setFont('helvetica', isCur ? 'bold' : 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(...(isCur ? BRIGHT : isFnd ? NAVY : GRAY));
+      doc.text(shortTitle, dotX - 1, tlY + 6, { angle: 40 });
+
+      // Feature note link
+      if (item.featureNoteUrl) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6);
+        doc.setTextColor(...BRIGHT);
+        doc.textWithLink('↗ notes', dotX - 1, tlY + 8, { url: item.featureNoteUrl, angle: 40 });
+      }
+    });
+
+    y = tlY + 38; // room for slanted labels
+
+    // Legend
+    doc.setFillColor(...NAVY);
+    doc.circle(MARGIN, y + 2, 2, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...GRAY);
+    doc.text('Foundation', MARGIN + 4, y + 3.5);
+
+    doc.setFillColor(...BRIGHT);
+    doc.circle(MARGIN + 38, y + 2, 2, 'F');
+    doc.text('Current', MARGIN + 42, y + 3.5);
+
+    doc.setFillColor(...LIGHT);
+    doc.setDrawColor(...BRIGHT);
+    doc.setLineWidth(0.5);
+    doc.circle(MARGIN + 68, y + 2, 2, 'FD');
+    doc.text('Upcoming', MARGIN + 72, y + 3.5);
+
+    y += 10;
   }
 
-  y = sectionBox(doc, 'Product Roadmap', y);
-  y += 5;
+  // ── End Users ──
+  y = checkPage(doc, y, 50);
+  if (y === 28) header(doc, 'Product Brief for Sales');
 
-  const items = content.roadmapItems || [];
-  const timelineY = y + 10;
-  const timelineLeft = 20;
-  const timelineRight = 190;
-  const timelineWidth = timelineRight - timelineLeft;
+  y = sectionHeading(doc, 'End Users', y);
+  y += 2;
 
-  // Timeline line
-  doc.setDrawColor(...BORDER_GRAY);
-  doc.setLineWidth(1.5);
-  doc.line(timelineLeft, timelineY, timelineRight, timelineY);
+  const colW   = (CONTENT - 6) / 3;
+  const col2   = MARGIN + colW + 3;
+  const col3   = MARGIN + (colW + 3) * 2;
 
-  const statusOrder = ['foundation', 'current', 'future'];
+  const endUserSections = [
+    { label: 'WHAT', text: content.endUser?.what },
+    { label: 'WHO',  text: content.endUser?.who },
+    { label: 'WHY',  text: content.endUser?.why },
+  ];
 
-  items.forEach((item, idx) => {
-    const fraction = items.length === 1 ? 0.5 : idx / (items.length - 1);
-    const dotX = timelineLeft + fraction * timelineWidth;
-    const isCurrent = item.status === 'current';
-    const isFoundation = item.status === 'foundation';
+  // Measure tallest column
+  const euHeights = endUserSections.map(s => {
+    const lines = doc.splitTextToSize(s.text || '—', colW - 4);
+    return lines.length * 4.8 + 14;
+  });
+  const euH = Math.max(...euHeights);
 
-    // Dot
-    if (isCurrent) {
-      doc.setFillColor(...BRIGHT_BLUE);
-      doc.circle(dotX, timelineY, 4, 'F');
-      doc.setFillColor(...NAVY);
-      doc.circle(dotX, timelineY, 2, 'F');
-    } else if (isFoundation) {
-      doc.setFillColor(...NAVY);
-      doc.circle(dotX, timelineY, 3, 'F');
-    } else {
-      doc.setFillColor(...LIGHT_BLUE);
-      doc.setDrawColor(...BRIGHT_BLUE);
-      doc.setLineWidth(0.8);
-      doc.circle(dotX, timelineY, 3, 'FD');
-    }
-
-    // Label above
+  [MARGIN, col2, col3].forEach((cx, i) => {
+    doc.setFillColor(...LGRAY);
+    doc.roundedRect(cx, y, colW, euH, 1, 1, 'F');
+    doc.setFillColor(...NAVY);
+    doc.roundedRect(cx, y, colW, 7, 1, 1, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(...NAVY);
-    const labelLines = doc.splitTextToSize(item.title || '—', 38);
-    doc.text(labelLines, dotX, timelineY - 8, { align: 'center' });
-
-    // Date below
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(...MID_GRAY);
-    doc.text(item.releaseDate || '', dotX, timelineY + 7, { align: 'center' });
-
-    // Feature note URL
-    if (item.isReleased && item.featureNoteUrl) {
-      doc.setTextColor(...BRIGHT_BLUE);
-      doc.setFontSize(6);
-      const urlText = item.featureNoteUrl.length > 30 ? item.featureNoteUrl.substring(0, 28) + '...' : item.featureNoteUrl;
-      doc.text(urlText, dotX, timelineY + 12, { align: 'center' });
-      doc.setTextColor(...DARK_GRAY);
-    }
-
-    // Description below
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(...MID_GRAY);
-    const descLines = doc.splitTextToSize(item.description || '', 36);
-    doc.text(descLines, dotX, timelineY + 17, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setTextColor(...WHITE);
+    doc.text(endUserSections[i].label, cx + colW / 2, y + 4.8, { align: 'center' });
+    bodyText(doc, endUserSections[i].text, cx + 3, y + 11, colW - 6);
   });
 
-  y = timelineY + 28;
+  y += euH + 6;
 
-  // Status legend
-  doc.setFillColor(...NAVY);
-  doc.circle(20, y + 2, 2, 'F');
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.setTextColor(...MID_GRAY);
-  doc.text('Foundation', 24, y + 4);
+  // ── Partners & Integrators ──
+  y = checkPage(doc, y, 50);
+  if (y === 28) header(doc, 'Product Brief for Sales');
 
-  doc.setFillColor(...BRIGHT_BLUE);
-  doc.circle(60, y + 2, 2, 'F');
-  doc.text('Current Release', 64, y + 4);
+  y = sectionHeading(doc, 'Integrators & Partners', y);
+  y += 2;
 
-  doc.setFillColor(...LIGHT_BLUE);
-  doc.setDrawColor(...BRIGHT_BLUE);
-  doc.setLineWidth(0.5);
-  doc.circle(105, y + 2, 2, 'FD');
-  doc.text('Future', 109, y + 4);
+  const partnerSections = [
+    { label: 'WHAT', text: content.partner?.what },
+    { label: 'WHO',  text: content.partner?.who },
+    { label: 'WHY',  text: content.partner?.why },
+  ];
 
-  y += 12;
+  const pHeights = partnerSections.map(s => {
+    const lines = doc.splitTextToSize(s.text || '—', colW - 4);
+    return lines.length * 4.8 + 14;
+  });
+  const pH = Math.max(...pHeights);
 
-  // End Users section
-  if (y > 220) {
-    doc.addPage();
-    currentPage++;
-    addPageHeader(doc, 'Product Brief');
-    y = 30;
+  [MARGIN, col2, col3].forEach((cx, i) => {
+    doc.setFillColor(...LIGHT);
+    doc.roundedRect(cx, y, colW, pH, 1, 1, 'F');
+    doc.setFillColor(...BLUE);
+    doc.roundedRect(cx, y, colW, 7, 1, 1, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...WHITE);
+    doc.text(partnerSections[i].label, cx + colW / 2, y + 4.8, { align: 'center' });
+    bodyText(doc, partnerSections[i].text, cx + 3, y + 11, colW - 6);
+  });
+
+  y += pH + 6;
+
+  // ── Additional Resources ──
+  const resourceText = [
+    content.helpCenterUrl ? `Help Center: ${content.helpCenterUrl}` : '',
+    content.additionalResources || '',
+  ].filter(Boolean).join('\n');
+
+  if (resourceText.trim()) {
+    y = checkPage(doc, y, 30);
+    if (y === 28) header(doc, 'Product Brief for Sales');
+
+    y = sectionHeading(doc, 'Additional Resources', y);
+    y += 2;
+
+    const resourceLines = resourceText.split('\n').filter(l => l.trim());
+    resourceLines.forEach(line => {
+      y = checkPage(doc, y, 12);
+      const urlMatch = line.match(/https?:\/\/[^\s]+/);
+      if (urlMatch) {
+        const url = urlMatch[0];
+        const labelPart = line.replace(url, '').replace(/[:\s]+$/, '').trim();
+        if (labelPart) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(...DARK);
+          doc.text(labelPart, MARGIN, y);
+          y += 5;
+        }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...BRIGHT);
+        const urlDisplay = url.length > 80 ? url.slice(0, 78) + '…' : url;
+        doc.textWithLink(urlDisplay, MARGIN, y, { url });
+        y += 6;
+      } else {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...DARK);
+        const wrapped = doc.splitTextToSize(line, CONTENT);
+        doc.text(wrapped, MARGIN, y);
+        y += wrapped.length * 4.8 + 2;
+      }
+    });
   }
 
-  y = sectionBox(doc, 'End Users', y);
-  y += 5;
-
-  const halfW = 85;
-  const col2X = 113;
-
-  // WHAT box
-  doc.setFillColor(...LIGHT_BLUE);
-  doc.rect(16, y, halfW, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...NAVY);
-  doc.text('WHAT', 20, y + 4.5);
-  y += 7;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  const whatLines = doc.splitTextToSize(content.endUser.what || '—', halfW - 6);
-  doc.text(whatLines, 16, y);
-  y += whatLines.length * 4.5 + 4;
-
-  // WHO box
-  doc.setFillColor(...LIGHT_BLUE);
-  doc.rect(16, y, halfW, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...NAVY);
-  doc.text('WHO', 20, y + 4.5);
-  y += 7;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  const whoLines = doc.splitTextToSize(content.endUser.who || '—', halfW - 6);
-  doc.text(whoLines, 16, y);
-  y += whoLines.length * 4.5 + 4;
-
-  // WHY box
-  doc.setFillColor(...LIGHT_BLUE);
-  doc.rect(16, y, halfW, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...NAVY);
-  doc.text('WHY', 20, y + 4.5);
-  y += 7;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  const whyLines = doc.splitTextToSize(content.endUser.why || '—', halfW - 6);
-  doc.text(whyLines, 16, y);
-  y += whyLines.length * 4.5 + 10;
-
-  // Integrators & Partners section
-  if (y > 220) {
-    doc.addPage();
-    currentPage++;
-    addPageHeader(doc, 'Product Brief');
-    y = 30;
-  }
-
-  y = sectionBox(doc, 'Integrators & Partners', y, BLUE);
-  y += 5;
-
-  doc.setFillColor(227, 242, 253);
-  doc.rect(16, y, halfW, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...BLUE);
-  doc.text('WHAT', 20, y + 4.5);
-  y += 7;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  const pWhatLines = doc.splitTextToSize(content.partner.what || '—', halfW - 6);
-  doc.text(pWhatLines, 16, y);
-  y += pWhatLines.length * 4.5 + 4;
-
-  doc.setFillColor(227, 242, 253);
-  doc.rect(16, y, halfW, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...BLUE);
-  doc.text('WHO', 20, y + 4.5);
-  y += 7;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  const pWhoLines = doc.splitTextToSize(content.partner.who || '—', halfW - 6);
-  doc.text(pWhoLines, 16, y);
-  y += pWhoLines.length * 4.5 + 4;
-
-  doc.setFillColor(227, 242, 253);
-  doc.rect(16, y, halfW, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...BLUE);
-  doc.text('WHY', 20, y + 4.5);
-  y += 7;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK_GRAY);
-  const pWhyLines = doc.splitTextToSize(content.partner.why || '—', halfW - 6);
-  doc.text(pWhyLines, 16, y);
-  y += pWhyLines.length * 4.5 + 10;
-
-  // Additional Resources
-  if (y > 240) {
-    doc.addPage();
-    currentPage++;
-    addPageHeader(doc, 'Product Brief');
-    y = 30;
-  }
-
-  if (content.additionalResources) {
-    y = sectionBox(doc, 'Additional Resources', y, [51, 65, 85]);
-    y += 5;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(...DARK_GRAY);
-    const resLines = doc.splitTextToSize(content.additionalResources, 178);
-    doc.text(resLines, 16, y);
-    y += resLines.length * 4.5 + 10;
-  }
-
-  // Add footers to all pages
+  // Footers
   const total = doc.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
     doc.setPage(i);
-    addPageFooter(doc, i, total);
+    footer(doc, i, total);
   }
 
   return doc;
 }
 
+// ─── Marketing Playbook PDF ──────────────────────────────────────
+
 export function generateMarketingPlaybookPdf(content) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
-  // --- TITLE PAGE ---
+  // ── Title page ──
   doc.setFillColor(...NAVY);
-  doc.rect(0, 0, 210, 297, 'F');
+  doc.rect(0, 0, PAGE_W, 297, 'F');
 
-  // Decorative elements
-  doc.setFillColor(...BLUE);
-  doc.rect(0, 0, 8, 297, 'F');
+  // Left accent bar
+  doc.setFillColor(...BRIGHT);
+  doc.rect(0, 0, 5, 297, 'F');
 
-  doc.setFillColor(33, 150, 243, 0.15);
-  doc.circle(180, 60, 80, 'F');
-
-  doc.setFillColor(255, 255, 255);
+  // Wordmark
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.text('GENEA', 20, 50);
+  doc.setFontSize(26);
+  doc.setTextColor(...WHITE);
+  doc.text('GENEA', 18, 52);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.setTextColor(180, 210, 255);
-  doc.text('Marketing Playbook', 20, 58);
+  doc.setTextColor(160, 200, 255);
+  doc.text('Marketing Playbook', 18, 60);
 
-  // Accent line
-  doc.setFillColor(...BRIGHT_BLUE);
-  doc.rect(20, 62, 80, 2, 'F');
+  doc.setFillColor(...BRIGHT);
+  doc.rect(18, 63, 60, 1.5, 'F');
 
-  // Product name
+  const pName = content.title.replace('Marketing Playbook: ', '');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(24);
+  doc.setFontSize(20);
   doc.setTextColor(...WHITE);
-  const pNameLines = doc.splitTextToSize(content.title.replace('Marketing Playbook: ', ''), 170);
-  doc.text(pNameLines, 20, 85);
+  const pLines = doc.splitTextToSize(pName, 170);
+  doc.text(pLines, 18, 78);
+
+  let ty = 78 + pLines.length * 9 + 6;
 
   // Tier badge
-  const tierY = 85 + pNameLines.length * 10 + 10;
-  const tierColors = {
-    'Tier 1': [220, 53, 69],
-    'Tier 2': [33, 150, 243],
-    'Tier 3': [40, 167, 69],
-    'Tier 4': [108, 117, 125],
-  };
-  const tierColor = tierColors[content.tier] || BRIGHT_BLUE;
-  doc.setFillColor(...tierColor);
-  doc.roundedRect(20, tierY, 70, 10, 2, 2, 'F');
+  doc.setFillColor(...BLUE);
+  doc.roundedRect(18, ty, 55, 9, 2, 2, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(...WHITE);
-  doc.text(content.tier, 55, tierY + 6.5, { align: 'center' });
+  doc.text(content.tier || '', 18 + 27.5, ty + 5.8, { align: 'center' });
 
-  // Generation date
+  ty += 16;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(180, 210, 255);
-  doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 20, tierY + 22);
+  doc.setFontSize(8.5);
+  doc.setTextColor(140, 185, 240);
+  doc.text(`Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 18, ty);
 
-  // Channel list
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(150, 190, 240);
-  doc.text('Channels included:', 20, tierY + 34);
-
-  const channels = Object.keys(content.channels);
-  channels.forEach((ch, idx) => {
-    doc.setFillColor(...BRIGHT_BLUE);
-    doc.circle(24, tierY + 43 + idx * 9, 1.5, 'F');
+  ty += 12;
+  doc.setFontSize(8.5);
+  doc.setTextColor(120, 170, 220);
+  doc.text('Channels:', 18, ty);
+  Object.keys(content.channels || {}).forEach((ch, i) => {
+    doc.setFillColor(...BRIGHT);
+    doc.circle(22, ty + 8 + i * 9, 1.5, 'F');
     doc.setTextColor(...WHITE);
-    doc.setFontSize(9);
-    doc.text(ch, 28, tierY + 45 + idx * 9);
+    doc.text(ch, 26, ty + 9.5 + i * 9);
   });
 
-  // Footer on title page
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setTextColor(100, 140, 200);
-  doc.text('© Genea Security — Confidential & Proprietary', 105, 285, { align: 'center' });
+  doc.text('© Genea Security — Confidential & Proprietary', PAGE_W / 2, 287, { align: 'center' });
 
-  // --- CHANNEL PAGES ---
-  const channelIcons = {
-    LinkedIn: 'in',
-    Instagram: 'ig',
-    YouTube: 'yt',
+  // ── Channel pages — Genea colors only ──
+  const channelAccents = {
+    LinkedIn:  NAVY,
+    Instagram: BLUE,
+    YouTube:   BRIGHT,
   };
 
-  const channelColors = {
-    LinkedIn: [0, 119, 181],
-    Instagram: [193, 53, 132],
-    YouTube: [255, 0, 0],
-  };
-
-  channels.forEach((channelName, channelIdx) => {
+  Object.entries(content.channels || {}).forEach(([channelName, ch]) => {
     doc.addPage();
-    addPageHeader(doc, `Marketing Playbook — ${channelName}`);
+    header(doc, `Marketing Playbook — ${channelName}`);
 
-    const ch = content.channels[channelName];
-    const chColor = channelColors[channelName] || BLUE;
+    const accent = channelAccents[channelName] || NAVY;
+    let y = 26;
 
-    let y = 30;
-
-    // Channel header
-    doc.setFillColor(...chColor);
-    doc.rect(14, y, 182, 12, 'F');
+    // Channel title bar
+    doc.setFillColor(...accent);
+    doc.roundedRect(MARGIN, y, CONTENT, 11, 1, 1, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
+    doc.setFontSize(12);
     doc.setTextColor(...WHITE);
-    doc.text(channelName.toUpperCase(), 20, y + 8.5);
-
-    // Channel icon hint
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255, 0.7);
-    doc.text(`[${channelIcons[channelName] || channelName.substring(0, 2).toUpperCase()}]`, 188, y + 8.5, { align: 'right' });
-
-    y += 16;
+    doc.text(channelName, MARGIN + 5, y + 7.5);
+    y += 15;
 
     // HEADLINE
-    doc.setFillColor(...LIGHT_BLUE);
-    doc.rect(14, y, 182, 7, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...NAVY);
-    doc.text('HEADLINE', 18, y + 5);
-    y += 9;
-
+    y = sectionHeading(doc, 'Headline / Hook', y);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...NAVY);
-    const headlineLines = doc.splitTextToSize(ch.headline, 174);
-    doc.text(headlineLines, 14, y);
-    y += headlineLines.length * 5.5 + 6;
+    const hLines = doc.splitTextToSize(ch.headline || '', CONTENT);
+    doc.text(hLines, MARGIN, y);
+    y += hLines.length * 6 + 6;
 
     // POST COPY
-    doc.setFillColor(...LIGHT_BLUE);
-    doc.rect(14, y, 182, 7, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...NAVY);
-    doc.text('POST COPY', 18, y + 5);
-    y += 9;
+    y = checkPage(doc, y, 40);
+    if (y === 28) header(doc, `Marketing Playbook — ${channelName}`);
+    y = sectionHeading(doc, 'Post Copy', y);
 
-    // Copy box
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(...BORDER_GRAY);
-    doc.setLineWidth(0.5);
-
-    const copyLines = doc.splitTextToSize(ch.copy, 170);
-    const copyBoxH = copyLines.length * 4.5 + 8;
-    doc.rect(14, y, 182, copyBoxH, 'FD');
-
-    // Left accent bar
-    doc.setFillColor(...chColor);
-    doc.rect(14, y, 3, copyBoxH, 'F');
-
+    const copyLines = doc.splitTextToSize(ch.copy || '', CONTENT - 8);
+    const copyH = copyLines.length * 4.8 + 10;
+    doc.setFillColor(...LGRAY);
+    doc.roundedRect(MARGIN, y, CONTENT, copyH, 1, 1, 'F');
+    doc.setFillColor(...accent);
+    doc.roundedRect(MARGIN, y, 3, copyH, 1, 0, 'F');
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(...DARK_GRAY);
-    doc.text(copyLines, 21, y + 5.5);
-    y += copyBoxH + 8;
+    doc.setTextColor(...DARK);
+    doc.text(copyLines, MARGIN + 6, y + 6);
+    y += copyH + 6;
 
     // CTA
-    doc.setFillColor(...LIGHT_BLUE);
-    doc.rect(14, y, 182, 7, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...NAVY);
-    doc.text('CALL TO ACTION', 18, y + 5);
-    y += 9;
-
+    y = checkPage(doc, y, 20);
+    if (y === 28) header(doc, `Marketing Playbook — ${channelName}`);
+    y = sectionHeading(doc, 'Call to Action', y);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(...BLUE);
-    doc.text(ch.cta, 14, y);
+    doc.text(ch.cta || '', MARGIN, y);
     y += 8;
 
     // VISUAL DIRECTION
-    if (y > 230) {
-      doc.addPage();
-      addPageHeader(doc, `Marketing Playbook — ${channelName}`);
-      y = 30;
-    }
-
-    doc.setFillColor(...LIGHT_BLUE);
-    doc.rect(14, y, 182, 7, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...NAVY);
-    doc.text('VISUAL DIRECTION', 18, y + 5);
-    y += 9;
-
-    doc.setFillColor(255, 253, 235);
-    doc.setDrawColor(253, 224, 71);
-    doc.setLineWidth(0.5);
-    const visLines = doc.splitTextToSize(ch.visualDirection, 170);
-    const visH = visLines.length * 4.5 + 8;
-    doc.rect(14, y, 182, visH, 'FD');
+    y = checkPage(doc, y, 24);
+    if (y === 28) header(doc, `Marketing Playbook — ${channelName}`);
+    y = sectionHeading(doc, 'Visual Direction', y);
+    const visLines = doc.splitTextToSize(ch.visualDirection || '', CONTENT - 8);
+    const visH = visLines.length * 4.8 + 10;
+    doc.setFillColor(...LIGHT);
+    doc.roundedRect(MARGIN, y, CONTENT, visH, 1, 1, 'F');
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(113, 83, 0);
-    doc.text(visLines, 18, y + 5.5);
-    y += visH + 8;
+    doc.setTextColor(...DARK);
+    doc.text(visLines, MARGIN + 5, y + 6);
+    y += visH + 6;
 
     // AUDIENCE NOTES
-    doc.setFillColor(...LIGHT_BLUE);
-    doc.rect(14, y, 182, 7, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...NAVY);
-    doc.text('AUDIENCE NOTES', 18, y + 5);
-    y += 9;
-
-    doc.setFillColor(240, 253, 244);
-    doc.setDrawColor(134, 239, 172);
-    doc.setLineWidth(0.5);
-    const audLines = doc.splitTextToSize(ch.audienceNotes, 170);
-    const audH = audLines.length * 4.5 + 8;
-    doc.rect(14, y, 182, audH, 'FD');
+    y = checkPage(doc, y, 24);
+    if (y === 28) header(doc, `Marketing Playbook — ${channelName}`);
+    y = sectionHeading(doc, 'Audience & Positioning Notes', y);
+    const audLines = doc.splitTextToSize(ch.audienceNotes || '', CONTENT - 8);
+    const audH = audLines.length * 4.8 + 10;
+    doc.setFillColor(...LGRAY);
+    doc.roundedRect(MARGIN, y, CONTENT, audH, 1, 1, 'F');
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(20, 83, 45);
-    doc.text(audLines, 18, y + 5.5);
+    doc.setTextColor(...DARK);
+    doc.text(audLines, MARGIN + 5, y + 6);
   });
 
-  // Footers on all pages (skip title page)
+  // Footers (skip title page)
   const total = doc.getNumberOfPages();
-  for (let i = 1; i <= total; i++) {
+  for (let i = 2; i <= total; i++) {
     doc.setPage(i);
-    if (i > 1) {
-      addPageFooter(doc, i - 1, total - 1);
-    }
+    footer(doc, i - 1, total - 1);
   }
 
   return doc;

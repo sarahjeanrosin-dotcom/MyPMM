@@ -17,7 +17,8 @@ export const sampleRelease = {
   partnerWhat: 'UWB reader SDK integration and credential lifecycle management APIs',
   partnerWho: 'Physical security integrators, building automation partners, MDM providers',
   partnerWhy: 'Enables premium seamless access experiences for enterprise deployments',
-  additionalResources: `Help Center: https://help.getgenea.com/mobile-credential-3\nRelease Notes: https://getgenea.com/release-notes/mc3\nProduct Video: https://youtube.com/genea/mc3-overview`,
+  helpCenterUrl: 'https://help.getgenea.com/mobile-credential-3',
+  additionalResources: `Release Notes: https://getgenea.com/release-notes/mc3\nProduct Video: https://youtube.com/genea/mc3-overview`,
   generatedProductBrief: null,
   generatedMarketingPlaybook: null,
 };

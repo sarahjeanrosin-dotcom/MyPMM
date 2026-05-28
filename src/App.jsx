@@ -226,105 +226,80 @@ function ReviewScreen({ release, onUpdate, onGenerate, onBack }) {
 }
 
 // ───────────────────────────────────────────────────────────────
-// Documents View
+// Documents View — tabbed, SaaS layout
 // ───────────────────────────────────────────────────────────────
 function DocumentsView({ release, briefContent, playbookContent, onBriefChange, onPlaybookChange, onBack }) {
   const [activeTab, setActiveTab] = useState('brief');
 
+  const tabs = [
+    { id: 'brief',    label: 'Product Brief',      dot: 'bg-genea-navy' },
+    { id: 'playbook', label: 'Marketing Playbook',  dot: 'bg-genea-bright' },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-genea-navy mb-2 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Edit Inputs
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      {/* Page header */}
+      <div className="mb-6">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-genea-navy mb-3 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Edit Inputs
+        </button>
+        <h2 className="text-2xl font-extrabold text-genea-navy leading-tight">{release.productName}</h2>
+        <p className="text-sm text-gray-400 mt-0.5">
+          {release.productSuite}{release.releaseDate ? `  ·  ${release.releaseDate}` : ''}
+          {' '}· Click any field to edit before downloading.
+        </p>
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex border-b border-gray-200 mb-6 gap-0">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all -mb-px ${
+              activeTab === tab.id
+                ? 'border-genea-navy text-genea-navy'
+                : 'border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${tab.dot}`} />
+            {tab.label}
           </button>
-          <h2 className="text-2xl font-extrabold text-genea-navy">Generated Documents</h2>
-          <p className="text-gray-500 text-sm mt-0.5">
-            <strong className="text-genea-navy">{release.productName}</strong> — Click any field to edit inline before downloading.
-          </p>
-        </div>
-
-        {/* Desktop download buttons */}
-        <div className="hidden lg:flex items-center gap-3">
-          <PdfDownloadButton type="brief" content={briefContent} label="Download Product Brief" />
-          <PdfDownloadButton type="playbook" content={playbookContent} label="Download Playbook" />
-        </div>
+        ))}
       </div>
 
-      {/* Mobile Tabs */}
-      <div className="flex lg:hidden border-b border-gray-200 mb-6">
-        <button
-          onClick={() => setActiveTab('brief')}
-          className={`flex-1 py-3 text-sm font-semibold transition-colors border-b-2 ${
-            activeTab === 'brief'
-              ? 'border-genea-navy text-genea-navy'
-              : 'border-transparent text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          Product Brief
-        </button>
-        <button
-          onClick={() => setActiveTab('playbook')}
-          className={`flex-1 py-3 text-sm font-semibold transition-colors border-b-2 ${
-            activeTab === 'playbook'
-              ? 'border-genea-navy text-genea-navy'
-              : 'border-transparent text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          Marketing Playbook
-        </button>
-      </div>
-
-      {/* Desktop: side by side / Mobile: tabbed */}
-      <div className="hidden lg:grid lg:grid-cols-2 gap-8">
-        {/* Product Brief */}
+      {/* Tab content */}
+      {activeTab === 'brief' && (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-genea-navy text-lg flex items-center gap-2">
-              <span className="w-2 h-5 bg-genea-navy rounded-full inline-block" />
-              Product Brief
-            </h3>
-            <PdfDownloadButton type="brief" content={briefContent} label="Download PDF" />
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Product Brief for Sales</p>
+            <div className="flex items-center gap-2">
+              <PdfDownloadButton type="brief" content={briefContent} format="word" />
+              <PdfDownloadButton type="brief" content={briefContent} format="pdf" />
+            </div>
           </div>
           <ProductBriefPreview content={briefContent} onContentChange={onBriefChange} />
         </div>
+      )}
 
-        {/* Marketing Playbook */}
+      {activeTab === 'playbook' && (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-genea-navy text-lg flex items-center gap-2">
-              <span className="w-2 h-5 bg-genea-bright rounded-full inline-block" />
-              Marketing Playbook
-            </h3>
-            <PdfDownloadButton type="playbook" content={playbookContent} label="Download PDF" />
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Marketing Playbook</p>
+            <div className="flex items-center gap-2">
+              <PdfDownloadButton type="playbook" content={playbookContent} format="word" />
+              <PdfDownloadButton type="playbook" content={playbookContent} format="pdf" />
+            </div>
           </div>
           <MarketingPlaybookPreview content={playbookContent} onContentChange={onPlaybookChange} />
         </div>
-      </div>
-
-      {/* Mobile tabbed views */}
-      <div className="lg:hidden">
-        {activeTab === 'brief' && (
-          <div>
-            <div className="flex justify-end mb-4">
-              <PdfDownloadButton type="brief" content={briefContent} label="Download Product Brief PDF" />
-            </div>
-            <ProductBriefPreview content={briefContent} onContentChange={onBriefChange} />
-          </div>
-        )}
-        {activeTab === 'playbook' && (
-          <div>
-            <div className="flex justify-end mb-4">
-              <PdfDownloadButton type="playbook" content={playbookContent} label="Download Playbook PDF" />
-            </div>
-            <MarketingPlaybookPreview content={playbookContent} onContentChange={onPlaybookChange} />
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -16,6 +16,7 @@ export function generateProductBriefContent(release) {
       who: release.partnerWho,
       why: release.partnerWhy,
     },
+    helpCenterUrl: release.helpCenterUrl,
     additionalResources: release.additionalResources,
   };
 }

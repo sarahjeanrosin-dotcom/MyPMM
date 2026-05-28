@@ -83,12 +83,12 @@ function Step1({ release, onChange }) {
             className="genea-input"
           />
         </FormField>
-        <FormField label="Release Date" required>
+        <FormField label="Release Date / Expected Release Date" required>
           <input
             type="text"
             value={release.releaseDate}
             onChange={e => onChange({ releaseDate: e.target.value })}
-            placeholder="e.g. 2026-06-15"
+            placeholder="e.g. 2026-06-15 or Q3 2026"
             className="genea-input"
           />
         </FormField>
@@ -346,15 +346,25 @@ function Step5({ release, onChange }) {
         </p>
       </div>
 
+      <FormField label="Help Center Article URL" hint="Primary help center article for this release">
+        <input
+          type="url"
+          value={release.helpCenterUrl}
+          onChange={e => onChange({ helpCenterUrl: e.target.value })}
+          placeholder="https://help.getgenea.com/..."
+          className="genea-input"
+        />
+      </FormField>
+
       <FormField
         label="Additional Resources"
-        hint="URLs, help center links, release notes, product videos, one per line"
+        hint="Release notes, product videos, support docs — one per line. URLs will be clickable in the PDF."
       >
         <textarea
           value={release.additionalResources}
           onChange={e => onChange({ additionalResources: e.target.value })}
-          placeholder={`Help Center: https://help.getgenea.com/...\nRelease Notes: https://getgenea.com/release-notes/...\nProduct Video: https://youtube.com/...`}
-          rows={8}
+          placeholder={`Release Notes: https://getgenea.com/release-notes/...\nProduct Video: https://youtube.com/...`}
+          rows={6}
           className="genea-input resize-none font-mono text-sm"
         />
       </FormField>
