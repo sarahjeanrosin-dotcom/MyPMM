@@ -42,22 +42,30 @@ function formatDate(str) {
   return str;
 }
 
-function header(doc, subtitle) {
+const LOGO_H_HEADER = 7;                          // mm — logo height in page headers
+const LOGO_W_HEADER = LOGO_H_HEADER * (735.8 / 131.6); // ≈ 39 mm
+const LOGO_Y_HEADER = (20 - LOGO_H_HEADER) / 2;   // vertically centered in 20mm bar
+
+function header(doc, subtitle, logoDataUrl) {
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, PAGE_W, 20, 'F');
   doc.setFillColor(...BRIGHT);
   doc.rect(0, 20, PAGE_W, 1.5, 'F');
 
-  // Logo text (real SVG can't render in jsPDF without canvas; polished text logo instead)
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(...WHITE);
-  doc.text('GENEA', MARGIN, 13);
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, 'PNG', MARGIN, LOGO_Y_HEADER, LOGO_W_HEADER, LOGO_H_HEADER);
+  } else {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...WHITE);
+    doc.text('GENEA', MARGIN, 13);
+  }
 
+  const subtitleX = MARGIN + (logoDataUrl ? LOGO_W_HEADER + 5 : 32);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setTextColor(180, 210, 255);
-  doc.text(subtitle, MARGIN + 30, 13);
+  doc.text(subtitle, subtitleX, 13);
 }
 
 function footer(doc, pageNum, total) {
@@ -68,18 +76,19 @@ function footer(doc, pageNum, total) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(...GRAY);
-  doc.text('© Genea Security — Confidential', MARGIN, fy + 4.5);
+  doc.text('(c) Genea Security - Confidential', MARGIN, fy + 4.5);
   doc.text(`${pageNum} / ${total}`, PAGE_W - MARGIN, fy + 4.5, { align: 'right' });
 }
 
 function sectionHeading(doc, title, y) {
+  const BOX_H = 8;
   doc.setFillColor(...NAVY);
-  doc.roundedRect(MARGIN, y, CONTENT, 7.5, 1, 1, 'F');
+  doc.roundedRect(MARGIN, y, CONTENT, BOX_H, 1.5, 1.5, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(...WHITE);
-  doc.text(title.toUpperCase(), MARGIN + 4, y + 5.2);
-  return y + 10;
+  doc.text(title.toUpperCase(), MARGIN + 5, y + 5.3);
+  return y + BOX_H + 4;
 }
 
 function subLabel(doc, label, y, color = NAVY) {
@@ -109,11 +118,11 @@ function checkPage(doc, y, needed = 30) {
 
 // ─── Product Brief PDF ───────────────────────────────────────────
 
-export function generateProductBriefPdf(content) {
+export function generateProductBriefPdf(content, logoDataUrl) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
   // ── Page 1 header ──
-  header(doc, 'Product Brief for Sales');
+  header(doc, 'Product Brief for Sales', logoDataUrl);
   let y = 26;
 
   // Title block
@@ -177,7 +186,7 @@ export function generateProductBriefPdf(content) {
 
   // ── Roadmap ──
   y = checkPage(doc, y, 50);
-  if (y === 28) header(doc, 'Product Brief for Sales');
+  if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
 
   y = sectionHeading(doc, 'Product Roadmap', y);
   y += 18;
@@ -259,7 +268,7 @@ export function generateProductBriefPdf(content) {
 
   // ── End Users ──
   y = checkPage(doc, y, 50);
-  if (y === 28) header(doc, 'Product Brief for Sales');
+  if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
 
   y = sectionHeading(doc, 'End Users', y);
   y += 2;
@@ -297,7 +306,7 @@ export function generateProductBriefPdf(content) {
 
   // ── Partners & Integrators ──
   y = checkPage(doc, y, 50);
-  if (y === 28) header(doc, 'Product Brief for Sales');
+  if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
 
   y = sectionHeading(doc, 'Integrators & Partners', y);
   y += 2;
@@ -336,7 +345,7 @@ export function generateProductBriefPdf(content) {
 
   if (resourceText.trim()) {
     y = checkPage(doc, y, 30);
-    if (y === 28) header(doc, 'Product Brief for Sales');
+    if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
 
     y = sectionHeading(doc, 'Additional Resources', y);
     y += 2;
@@ -384,7 +393,7 @@ export function generateProductBriefPdf(content) {
 
 // ─── Marketing Playbook PDF ──────────────────────────────────────
 
-export function generateMarketingPlaybookPdf(content) {
+export function generateMarketingPlaybookPdf(content, logoDataUrl) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
   // ── Title page ──
@@ -395,26 +404,32 @@ export function generateMarketingPlaybookPdf(content) {
   doc.setFillColor(...BRIGHT);
   doc.rect(0, 0, 5, 297, 'F');
 
-  // Wordmark
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(26);
-  doc.setTextColor(...WHITE);
-  doc.text('GENEA', 18, 52);
+  // Logo or wordmark
+  const LOGO_H_LG = 13;
+  const LOGO_W_LG = LOGO_H_LG * (735.8 / 131.6); // ≈ 73mm
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, 'PNG', 18, 42, LOGO_W_LG, LOGO_H_LG);
+  } else {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(26);
+    doc.setTextColor(...WHITE);
+    doc.text('GENEA', 18, 52);
+  }
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(160, 200, 255);
-  doc.text('Marketing Playbook', 18, 60);
+  doc.text('Marketing Playbook', 18, logoDataUrl ? 62 : 60);
 
   doc.setFillColor(...BRIGHT);
-  doc.rect(18, 63, 60, 1.5, 'F');
+  doc.rect(18, logoDataUrl ? 65 : 63, 60, 1.5, 'F');
 
   const pName = content.title.replace('Marketing Playbook: ', '');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
   doc.setTextColor(...WHITE);
   const pLines = doc.splitTextToSize(pName, 170);
-  doc.text(pLines, 18, 78);
+  doc.text(pLines, 18, logoDataUrl ? 78 : 78);
 
   let ty = 78 + pLines.length * 9 + 6;
 
@@ -424,7 +439,7 @@ export function generateMarketingPlaybookPdf(content) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(...WHITE);
-  doc.text(content.tier || '', 18 + 27.5, ty + 5.8, { align: 'center' });
+  doc.text(sanitize(content.tier || ''), 18 + 27.5, ty + 5.8, { align: 'center' });
 
   ty += 16;
   doc.setFont('helvetica', 'normal');
@@ -446,13 +461,13 @@ export function generateMarketingPlaybookPdf(content) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 140, 200);
-  doc.text('© Genea Security — Confidential & Proprietary', PAGE_W / 2, 287, { align: 'center' });
+  doc.text('(c) Genea Security - Confidential & Proprietary', PAGE_W / 2, 287, { align: 'center' });
 
   // ── Tier 4: release notes only — no channel pages ──
   const channels = content.channels || {};
   if (Object.keys(channels).length === 0) {
     doc.addPage();
-    header(doc, 'Marketing Playbook');
+    header(doc, 'Marketing Playbook', logoDataUrl);
     let y = 26;
     y = sectionHeading(doc, 'Release Notes Only', y);
     y += 4;
@@ -478,7 +493,7 @@ export function generateMarketingPlaybookPdf(content) {
 
   Object.entries(channels).forEach(([channelName, ch]) => {
     doc.addPage();
-    header(doc, `Marketing Playbook -- ${channelName}`);
+    header(doc, `Marketing Playbook -- ${channelName}`, logoDataUrl);
 
     const accent = channelAccents[channelName] || NAVY;
     let y = 26;
@@ -503,7 +518,7 @@ export function generateMarketingPlaybookPdf(content) {
 
     // POST COPY
     y = checkPage(doc, y, 40);
-    if (y === 28) header(doc, `Marketing Playbook -- ${channelName}`);
+    if (y === 28) header(doc, `Marketing Playbook -- ${channelName}`, logoDataUrl);
     y = sectionHeading(doc, 'Post Copy', y);
 
     const copyLines = doc.splitTextToSize(sanitize(ch.copy || ''), CONTENT - 8);
@@ -520,7 +535,7 @@ export function generateMarketingPlaybookPdf(content) {
 
     // CTA
     y = checkPage(doc, y, 20);
-    if (y === 28) header(doc, `Marketing Playbook -- ${channelName}`);
+    if (y === 28) header(doc, `Marketing Playbook -- ${channelName}`, logoDataUrl);
     y = sectionHeading(doc, 'Call to Action', y);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
@@ -531,7 +546,7 @@ export function generateMarketingPlaybookPdf(content) {
 
     // VISUAL DIRECTION
     y = checkPage(doc, y, 24);
-    if (y === 28) header(doc, `Marketing Playbook -- ${channelName}`);
+    if (y === 28) header(doc, `Marketing Playbook -- ${channelName}`, logoDataUrl);
     y = sectionHeading(doc, 'Visual Direction', y);
     const visLines = doc.splitTextToSize(sanitize(ch.visualDirection || ''), CONTENT - 8);
     const visH = visLines.length * 4.8 + 10;
@@ -545,7 +560,7 @@ export function generateMarketingPlaybookPdf(content) {
 
     // AUDIENCE NOTES
     y = checkPage(doc, y, 24);
-    if (y === 28) header(doc, `Marketing Playbook -- ${channelName}`);
+    if (y === 28) header(doc, `Marketing Playbook -- ${channelName}`, logoDataUrl);
     y = sectionHeading(doc, 'Audience & Positioning Notes', y);
     const audLines = doc.splitTextToSize(sanitize(ch.audienceNotes || ''), CONTENT - 8);
     const audH = audLines.length * 4.8 + 10;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { generateProductBriefPdf, generateMarketingPlaybookPdf } from '../utils/pdfGenerator';
 import { generateProductBriefDocx, generateMarketingPlaybookDocx } from '../utils/wordGenerator';
+import { getLogoDataUrl } from '../utils/logoUtils';
 
 export default function DownloadButton({ type, content, format = 'pdf' }) {
   const [state, setState] = useState('idle');
@@ -20,8 +21,9 @@ export default function DownloadButton({ type, content, format = 'pdf' }) {
         a.click();
         URL.revokeObjectURL(url);
       } else {
+        const logoDataUrl = await getLogoDataUrl('white');
         const genFn = type === 'brief' ? generateProductBriefPdf : generateMarketingPlaybookPdf;
-        const doc   = genFn(content);
+        const doc   = genFn(content, logoDataUrl);
         doc.save(type === 'brief' ? 'Genea-Product-Brief.pdf' : 'Genea-Marketing-Playbook.pdf');
       }
       setState('done');
