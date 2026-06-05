@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { GeneaLogoWhite } from './BrandTheme';
+import { tierConfig } from '../config/tierConfig';
 
 const channelColors = {
   LinkedIn: { bg: 'bg-[#0077B5]', light: 'bg-blue-50', border: 'border-[#0077B5]/30', text: 'text-[#0077B5]', badge: 'bg-[#0077B5]' },
@@ -191,22 +192,58 @@ export default function MarketingPlaybookPreview({ content, onContentChange }) {
 
       <div className="p-8">
         {/* Title Block */}
-        <div className="bg-genea-navy rounded-xl p-6 mb-8 relative overflow-hidden">
+        <div className="bg-genea-navy rounded-xl p-6 mb-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-40 h-40 bg-genea-bright/10 rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="relative">
             <h1 className="text-2xl font-extrabold text-white leading-tight mb-3">
               {content.title?.replace('Marketing Playbook: ', '') || 'Marketing Playbook'}
             </h1>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className={`text-xs font-bold px-3 py-1 rounded-full ${tierBadgeStyle[content.tier] || 'bg-genea-bright text-white'}`}>
                 {content.tier}
               </span>
               <span className="text-blue-300 text-xs">
-                Generated {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
               </span>
             </div>
           </div>
         </div>
+
+        {/* Tier context banner */}
+        {(() => {
+          const cfg = tierConfig[content.tier];
+          if (!cfg) return null;
+          const bannerStyle = {
+            'Tier 1': 'bg-red-50 border-red-200 text-red-800',
+            'Tier 2': 'bg-blue-50 border-blue-200 text-blue-800',
+            'Tier 3': 'bg-green-50 border-green-200 text-green-800',
+            'Tier 4': 'bg-gray-50 border-gray-200 text-gray-700',
+          }[content.tier] || 'bg-gray-50 border-gray-200 text-gray-700';
+          return (
+            <div className={`rounded-xl border px-5 py-3 mb-6 text-sm ${bannerStyle}`}>
+              <span className="font-semibold">{cfg.label}: </span>
+              {cfg.description}
+              {cfg.channels.length > 0 && (
+                <span className="ml-2 font-medium">Channels: {cfg.channels.join(', ')}.</span>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Tier 4 — no channels */}
+        {(!content.channels || Object.keys(content.channels).length === 0) && (
+          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="font-bold text-gray-700 text-lg mb-2">Release Notes Only</h3>
+            <p className="text-gray-500 text-sm max-w-sm mx-auto">
+              Tier 4 releases don't require marketing materials. Log this update in the product release notes — no social campaign or customer email needed.
+            </p>
+          </div>
+        )}
 
         {/* Channel Cards */}
         {content.channels && Object.entries(content.channels).map(([channelName, channelData]) => (

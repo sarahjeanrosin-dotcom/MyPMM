@@ -389,7 +389,7 @@ export default function App() {
     setView('generating');
     try {
       let releaseWithCopy = release;
-      if (!release.marketingCopy) {
+      if (!release.marketingCopy && release.tierLevel !== 'Tier 4') {
         const copy = await generateMarketingCopy(release);
         releaseWithCopy = { ...release, marketingCopy: copy };
         setRelease(releaseWithCopy);

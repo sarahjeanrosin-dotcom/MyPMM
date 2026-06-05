@@ -134,7 +134,7 @@ export default function ProductBriefPreview({ content, onContentChange }) {
         {/* Roadmap */}
         <div className="mb-6">
           <SectionHeader title="Product Roadmap" />
-          <div className="border border-t-0 border-gray-200 rounded-b-lg overflow-x-auto">
+          <div className="border border-t-0 border-gray-200 rounded-b-lg">
             <RoadmapTimeline mode="preview" items={content.roadmapItems} />
           </div>
         </div>

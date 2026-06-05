@@ -317,72 +317,85 @@ function RoadmapEditor({ items, onChange }) {
   );
 }
 
-// Preview Mode: horizontal timeline visual
+// Preview Mode: SVG timeline that always fits its container
 function RoadmapPreview({ items }) {
   if (!items || items.length === 0) {
     return <p className="text-gray-400 text-sm italic">No roadmap items added.</p>;
   }
 
-  return (
-    <div className="relative py-8 px-4 overflow-x-auto">
-      {/* Timeline line */}
-      <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-gray-200 transform -translate-y-1/2" style={{ top: '50%' }} />
+  const displayItems = items.slice(0, 8);
+  const n = displayItems.length;
 
-      <div className="relative flex items-center justify-around min-w-max mx-auto gap-12 px-8">
-        {items.map((item, idx) => {
-          const isCurrent = item.status === 'current';
-          const isFoundation = item.status === 'foundation';
-          const isFuture = item.status === 'future';
+  const W = 600;
+  const H = 170;
+  const PAD_L = 12;
+  const PAD_R = 90; // extra right room for last item's angled label
+  const usableW = W - PAD_L - PAD_R;
+  const LINE_Y = 50;
+
+  const dotX = (i) => n === 1 ? PAD_L + usableW / 2 : PAD_L + (i / (n - 1)) * usableW;
+
+  return (
+    <div className="py-4 px-2">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ display: 'block' }}>
+        {/* Timeline line */}
+        <line x1={PAD_L} y1={LINE_Y} x2={PAD_L + usableW} y2={LINE_Y} stroke="#e2e8f0" strokeWidth="2.5" />
+
+        {displayItems.map((item, idx) => {
+          const x = dotX(idx);
+          const isCur = item.status === 'current';
+          const isFnd = item.status === 'foundation';
+          const label = item.title
+            ? (item.title.length > 16 ? item.title.slice(0, 14) + '…' : item.title)
+            : '—';
 
           return (
-            <div key={item.id} className="flex flex-col items-center relative" style={{ minWidth: 120 }}>
-              {/* Label above */}
-              <div className="mb-3 text-center" style={{ maxWidth: 120 }}>
-                <p className={`text-xs font-bold leading-tight ${isCurrent ? 'text-genea-bright' : isFoundation ? 'text-genea-navy' : 'text-gray-400'}`}>
-                  {item.title || '—'}
-                </p>
-                {item.isReleased && item.featureNoteUrl && (
-                  <a
-                    href={item.featureNoteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-genea-bright hover:underline flex items-center justify-center gap-0.5 mt-0.5"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    Notes
-                  </a>
-                )}
-              </div>
+            <g key={item.id}>
+              {/* Date above dot */}
+              {item.releaseDate && (
+                <text x={x} y={LINE_Y - 10} textAnchor="middle" fontSize="7" fill="#94a3b8">
+                  {item.releaseDate}
+                </text>
+              )}
 
               {/* Dot */}
-              <div className={`
-                relative z-10 rounded-full flex items-center justify-center
-                ${isCurrent
-                  ? 'w-7 h-7 bg-genea-bright shadow-lg shadow-genea-bright/40 ring-4 ring-genea-bright/20'
-                  : isFoundation
-                  ? 'w-5 h-5 bg-genea-navy'
-                  : 'w-5 h-5 border-2 border-genea-bright border-dashed bg-white'
-                }
-              `}>
-                {isCurrent && (
-                  <div className="w-2.5 h-2.5 bg-white rounded-full" />
-                )}
-              </div>
+              {isCur ? (
+                <>
+                  <circle cx={x} cy={LINE_Y} r="9" fill="#2196f3" fillOpacity="0.12" />
+                  <circle cx={x} cy={LINE_Y} r="6" fill="#2196f3" />
+                  <circle cx={x} cy={LINE_Y} r="2.5" fill="white" />
+                </>
+              ) : isFnd ? (
+                <circle cx={x} cy={LINE_Y} r="5" fill="#003865" />
+              ) : (
+                <circle cx={x} cy={LINE_Y} r="5" fill="white" stroke="#2196f3" strokeWidth="1.5" strokeDasharray="3 2" />
+              )}
 
-              {/* Label below */}
-              <div className="mt-3 text-center" style={{ maxWidth: 120 }}>
-                <p className="text-xs text-gray-500">{item.releaseDate || ''}</p>
-                <p className="text-xs text-gray-400 mt-0.5 leading-tight">{item.description || ''}</p>
-                <div className="mt-1">
-                  <StatusBadge status={item.status} />
-                </div>
-              </div>
-            </div>
+              {/* Title — 40° clockwise from just below the dot */}
+              <text
+                x={x - 2}
+                y={LINE_Y + 12}
+                fontSize="8.5"
+                fill={isCur ? '#2196f3' : isFnd ? '#003865' : '#94a3b8'}
+                fontWeight={isCur ? 'bold' : 'normal'}
+                transform={`rotate(40, ${x - 2}, ${LINE_Y + 12})`}
+              >
+                {label}
+              </text>
+            </g>
           );
         })}
-      </div>
+
+        {/* Legend */}
+        <g transform={`translate(${PAD_L}, ${H - 16})`}>
+          <circle cx="5" cy="4" r="4" fill="#003865" />
+          <text x="12" y="7.5" fontSize="7.5" fill="#64748b">Foundation</text>
+          <circle cx="64" cy="4" r="4" fill="#2196f3" />
+          <text x="71" y="7.5" fontSize="7.5" fill="#64748b">Current</text>
+          <circle cx="111" cy="4" r="4" fill="white" stroke="#2196f3" strokeWidth="1.5" strokeDasharray="3 2" />
+          <text x="118" y="7.5" fontSize="7.5" fill="#64748b">Upcoming</text>
+        </g>
+      </svg>
     </div>
   );
 }

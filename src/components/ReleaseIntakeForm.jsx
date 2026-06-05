@@ -85,10 +85,9 @@ function Step1({ release, onChange }) {
         </FormField>
         <FormField label="Release Date / Expected Release Date" required>
           <input
-            type="text"
-            value={release.releaseDate}
+            type="date"
+            value={release.releaseDate || ''}
             onChange={e => onChange({ releaseDate: e.target.value })}
-            placeholder="e.g. 2026-06-15 or Q3 2026"
             className="genea-input"
           />
         </FormField>
