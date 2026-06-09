@@ -4,6 +4,8 @@ import FileUpload from './FileUpload';
 import RoadmapTimeline from './RoadmapTimeline';
 import CompetitorSelector from './CompetitorSelector';
 import VerticalSelector from './VerticalSelector';
+import CollateralSelector from './CollateralSelector';
+import { tierConfig } from '../config/tierConfig';
 import { sampleRelease } from '../data/sampleData';
 import { generateWhoWhatWhy } from '../utils/aiGenerator';
 
@@ -150,7 +152,13 @@ function Step1({ release, onChange }) {
 
       <FormField label="Release Tier" required>
         <div className="mt-1">
-          <TierSelector value={release.tierLevel} onChange={v => onChange({ tierLevel: v })} />
+          <TierSelector
+            value={release.tierLevel}
+            onChange={v => onChange({
+              tierLevel: v,
+              selectedCollateral: tierConfig[v]?.collateralDefaults || [],
+            })}
+          />
         </div>
       </FormField>
 
@@ -161,40 +169,12 @@ function Step1({ release, onChange }) {
         />
       </FormField>
 
-      <FormField label="What would you like to generate?" required hint="Select at least one. Both are combined into a single downloadable document.">
-        <div className="flex gap-3 mt-1">
-          {[
-            { key: 'brief',    label: 'Product Brief',       desc: 'For Sales & CS enablement' },
-            { key: 'playbook', label: 'Marketing Playbook',  desc: 'Social copy & campaign guide' },
-          ].map(({ key, label, desc }) => {
-            const selected = (release.selectedCollateral || ['brief', 'playbook']).includes(key);
-            return (
-              <label
-                key={key}
-                className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 flex-1 transition-all select-none ${
-                  selected ? 'border-genea-bright bg-genea-light' : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={selected}
-                  onChange={e => {
-                    const current = release.selectedCollateral || ['brief', 'playbook'];
-                    const updated = e.target.checked
-                      ? [...current, key]
-                      : current.filter(k => k !== key);
-                    onChange({ selectedCollateral: updated });
-                  }}
-                  className="w-4 h-4 mt-0.5 text-genea-bright rounded border-gray-300 focus:ring-genea-bright flex-shrink-0"
-                />
-                <div>
-                  <p className={`font-semibold text-sm ${selected ? 'text-genea-navy' : 'text-gray-600'}`}>{label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
-                </div>
-              </label>
-            );
-          })}
-        </div>
+      <FormField label="What would you like to generate?" required hint="Defaults are set by tier. Combined into one downloadable document.">
+        <CollateralSelector
+          selected={release.selectedCollateral || []}
+          tierLevel={release.tierLevel}
+          onChange={v => onChange({ selectedCollateral: v })}
+        />
       </FormField>
 
       {(release.selectedCollateral || []).includes('playbook') && (
@@ -510,10 +490,7 @@ export default function ReleaseIntakeForm({ release, onChange, onFinish }) {
   }
 
   function canProceed() {
-    if (currentStep === 1) return (
-      release.productName && release.releaseDate && release.productSuite && release.tierLevel &&
-      (release.selectedCollateral || []).length > 0
-    );
+    if (currentStep === 1) return !!(release.productName && release.releaseDate && release.productSuite && release.tierLevel);
     if (currentStep === 2) return release.productInformation && release.productInformation.length >= 50;
     return true;
   }

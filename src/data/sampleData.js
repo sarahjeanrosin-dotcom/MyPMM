@@ -19,7 +19,7 @@ export const sampleRelease = {
   partnerWhy: 'Enables premium seamless access experiences for enterprise deployments',
   helpCenterUrl: 'https://help.getgenea.com/mobile-credential-3',
   additionalResources: `Release Notes: https://getgenea.com/release-notes/mc3\nProduct Video: https://youtube.com/genea/mc3-overview`,
-  selectedCollateral: ['brief', 'playbook'],
+  selectedCollateral: ['brief', 'linkedin', 'youtube', 'email'],
   targetVerticals: ['Healthcare', 'CRE (Commercial Real Estate)', 'Critical Infrastructure'],
   playbookBrief: {
     keyMessage: 'Genea Mobile Credential 3.0 is the only enterprise-grade UWB hands-free solution with native Apple Watch support.',

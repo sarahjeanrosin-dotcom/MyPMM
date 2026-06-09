@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import TierSelector from './TierSelector';
 import CompetitorSelector from './CompetitorSelector';
 import VerticalSelector from './VerticalSelector';
+import CollateralSelector from './CollateralSelector';
+import { tierConfig } from '../config/tierConfig';
 import { processRawRelease } from '../utils/aiGenerator';
 
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
@@ -83,7 +85,7 @@ export default function RawInputScreen({ onProcessed, onManual }) {
   const [productSuite, setProductSuite] = useState('');
   const [releaseDate,  setReleaseDate]  = useState('');
   const [tierLevel,    setTierLevel]    = useState('Tier 2');
-  const [collateral,   setCollateral]   = useState(['brief', 'playbook']);
+  const [collateral,   setCollateral]   = useState(() => tierConfig['Tier 2']?.collateralDefaults || []);
   const [competitors,    setCompetitors]    = useState([]);
   const [targetVerticals,setTargetVerticals]= useState([]);
   const [playbookBrief,  setPlaybookBrief]  = useState({ keyMessage: '', proofPoints: '', avoid: '' });
@@ -92,8 +94,9 @@ export default function RawInputScreen({ onProcessed, onManual }) {
   const [dragging,     setDragging]     = useState(false);
   const dropRef = useRef(null);
 
-  function toggleCollateral(key) {
-    setCollateral(c => c.includes(key) ? c.filter(k => k !== key) : [...c, key]);
+  function handleTierChange(newTier) {
+    setTierLevel(newTier);
+    setCollateral(tierConfig[newTier]?.collateralDefaults || []);
   }
 
   async function handleProcess() {
@@ -135,7 +138,7 @@ export default function RawInputScreen({ onProcessed, onManual }) {
   }
 
   const wordCount   = rawText.trim() ? rawText.trim().split(/\s+/).length : 0;
-  const canProcess  = rawText.trim().length > 20 && collateral.length > 0;
+  const canProcess = rawText.trim().length > 20;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10 space-y-5">
@@ -192,39 +195,15 @@ export default function RawInputScreen({ onProcessed, onManual }) {
         <div>
           <label className="genea-label">Release Tier</label>
           <div className="mt-1">
-            <TierSelector value={tierLevel} onChange={setTierLevel} />
+            <TierSelector value={tierLevel} onChange={handleTierChange} />
           </div>
         </div>
 
         <div>
-          <label className="genea-label">What would you like to generate?</label>
-          <div className="flex gap-3 mt-1">
-            {[
-              { key: 'brief',    label: 'Product Brief',      desc: 'For Sales & CS' },
-              { key: 'playbook', label: 'Marketing Playbook', desc: 'Social copy & campaign' },
-            ].map(({ key, label, desc }) => {
-              const selected = collateral.includes(key);
-              return (
-                <label
-                  key={key}
-                  className={`flex items-start gap-3 cursor-pointer p-3 rounded-xl border-2 flex-1 transition-all select-none ${
-                    selected ? 'border-genea-bright bg-genea-light' : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() => toggleCollateral(key)}
-                    className="w-4 h-4 mt-0.5 text-genea-bright rounded border-gray-300 focus:ring-genea-bright flex-shrink-0"
-                  />
-                  <div>
-                    <p className={`font-semibold text-sm ${selected ? 'text-genea-navy' : 'text-gray-600'}`}>{label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
-                  </div>
-                </label>
-              );
-            })}
-          </div>
+          <label className="genea-label mb-2 block">What would you like to generate?
+            <span className="text-gray-400 font-normal ml-1 text-xs">— defaults set by tier</span>
+          </label>
+          <CollateralSelector selected={collateral} tierLevel={tierLevel} onChange={setCollateral} />
         </div>
       </div>
 
@@ -275,7 +254,12 @@ export default function RawInputScreen({ onProcessed, onManual }) {
         <p className="text-xs text-gray-400 mb-4">
           Select competitors to compare against. Mark whether they have this feature — this generates a competitive analysis table in the Product Brief.
         </p>
-        <CompetitorSelector competitors={competitors} onChange={setCompetitors} />
+        <CompetitorSelector
+          competitors={competitors}
+          onChange={setCompetitors}
+          featureDescription={productName}
+          productDescription={rawText.slice(0, 400)}
+        />
       </div>
 
       {/* ── Playbook Brief ───────────────────────────────────────── */}

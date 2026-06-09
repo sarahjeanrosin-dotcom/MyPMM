@@ -436,9 +436,11 @@ export default function App() {
   async function handleGenerate() {
     setView('generating');
     try {
-      const collateral = release.selectedCollateral || ['brief', 'playbook'];
+      const collateral = release.selectedCollateral || ['brief', 'linkedin', 'youtube'];
       const wantsBrief    = collateral.includes('brief');
-      const wantsPlaybook = collateral.includes('playbook');
+      // Any channel key means the user wants the playbook
+      const CHANNEL_KEYS  = ['linkedin', 'instagram', 'youtube', 'email', 'playbook'];
+      const wantsPlaybook = collateral.some(c => CHANNEL_KEYS.includes(c));
 
       let releaseWithCopy = release;
       if (wantsPlaybook && !release.marketingCopy && release.tierLevel !== 'Tier 4') {

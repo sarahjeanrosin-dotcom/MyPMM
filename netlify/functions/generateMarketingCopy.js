@@ -30,10 +30,13 @@ export default async function handler(req, context) {
   }
 
   const { productName, productSuite, releaseDate, productInformation, endUserWhy,
-          tierLevel, competitors, competitivePosition,
+          tierLevel, selectedChannels, competitors, competitivePosition,
           playbookBrief, targetVerticals } = body;
 
-  const channels = TIER_CHANNELS[tierLevel] || TIER_CHANNELS['Tier 2'];
+  // Use explicit channel selection if provided, otherwise fall back to tier defaults
+  const channels = (selectedChannels?.length ? selectedChannels : null)
+    || TIER_CHANNELS[tierLevel]
+    || TIER_CHANNELS['Tier 2'];
 
   // Tier 4 needs no copy
   if (channels.length === 0) {
@@ -42,34 +45,38 @@ export default async function handler(req, context) {
 
   const tierGuidance = TIER_GUIDANCE[tierLevel] || TIER_GUIDANCE['Tier 2'];
 
-  // Vertical angles schema snippet (added to each channel if verticals selected)
   const verticals = (targetVerticals || []);
-  const verticalSchemaSnippet = verticals.length
-    ? `,\n    "verticalAngles": [${verticals.map(v => `{"vertical": "${v}", "angle": "1 plain-ASCII sentence tailored for ${v} audience"}`).join(', ')}]`
+
+  // Vertical angles for social channels
+  const verticalAnglesSnippet = verticals.length
+    ? `,\n    "verticalAngles": [${verticals.map(v => `{"vertical": "${v}", "angle": "1 sentence for ${v} audience. Plain ASCII."}`).join(', ')}]`
+    : '';
+
+  // Vertical emails for Email channel
+  const verticalEmailsSnippet = verticals.length
+    ? `,\n    "verticalEmails": [${verticals.map(v => `{"vertical": "${v}", "subject": "Subject for ${v}", "body": "150-200 word email tailored to ${v} pain points. Plain ASCII.", "cta2": "[LEARN MORE - ${v.toUpperCase().replace(/[^A-Z0-9]/g, '_')} KBA LINK]"}`).join(', ')}]`
     : '';
 
   // Build the JSON schema only for the relevant channels
-  const channelSchema = (name, copySpec) => `  "${name}": {
+  const socialSchema = (name, copySpec) => `  "${name}": {
     "headline": ${copySpec.headline},
     "copy": ${copySpec.copy},
     "cta": "Call-to-action. Plain ASCII only.",
     "visualDirection": "1-2 sentences on ideal visual direction.",
-    "audienceNotes": "1-2 sentences on target audience and positioning."${verticalSchemaSnippet}
+    "audienceNotes": "1-2 sentences on target audience and positioning."${verticalAnglesSnippet}
   }`;
 
   const channelSchemas = {
-    LinkedIn: channelSchema('LinkedIn', {
-      headline: '"Punchy professional headline, under 15 words"',
-      copy:     '"Complete LinkedIn post, 150-250 words. Lead with value, end with CTA. Plain ASCII only."',
-    }),
-    Instagram: channelSchema('Instagram', {
-      headline: '"Short punchy hook, under 10 words"',
-      copy:     '"Complete Instagram caption, 80-150 words. Punchy, benefit-led. End with hashtags. Plain ASCII only."',
-    }),
-    YouTube: channelSchema('YouTube', {
-      headline: '"Searchable video title, under 70 chars"',
-      copy:     '"Video description with topics covered + subscribe CTA. 100-200 words. Plain ASCII only."',
-    }),
+    LinkedIn:  socialSchema('LinkedIn',  { headline: '"Punchy professional headline, under 15 words"', copy: '"Complete LinkedIn post, 150-250 words. Lead with value, end with CTA. Plain ASCII only."' }),
+    Instagram: socialSchema('Instagram', { headline: '"Short punchy hook, under 10 words"', copy: '"Complete Instagram caption, 80-150 words. Punchy, benefit-led. End with hashtags. Plain ASCII only."' }),
+    YouTube:   socialSchema('YouTube',   { headline: '"Searchable video title, under 70 chars"', copy: '"Video description with topics + subscribe CTA. 100-200 words. Plain ASCII only."' }),
+    Email: `  "Email": {
+    "subject": "Email subject line, 6-10 words. Plain ASCII.",
+    "preheader": "Preview text, under 12 words.",
+    "body": "Complete email body, 200-300 words. Professional, benefit-led, clear sections. Plain ASCII only.",
+    "cta1": "[SCHEDULE A DEMO - INSERT LINK]",
+    "cta2": "[LEARN MORE - INSERT LINK]"${verticalEmailsSnippet}
+  }`,
   };
 
   const schemaBody = channels.map(ch => channelSchemas[ch]).join(',\n');

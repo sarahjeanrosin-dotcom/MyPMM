@@ -1,4 +1,11 @@
 import { useState } from 'react';
+import { researchCompetitors } from '../utils/aiGenerator';
+
+const CONFIDENCE_STYLE = {
+  high:    { bg: 'bg-green-100',  text: 'text-green-700',  label: 'High confidence'   },
+  medium:  { bg: 'bg-amber-100',  text: 'text-amber-700',  label: 'Medium confidence' },
+  low:     { bg: 'bg-gray-100',   text: 'text-gray-600',   label: 'Low confidence'    },
+};
 
 const KNOWN_COMPETITORS = [
   'Openpath (Assa Abloy)',
@@ -38,9 +45,12 @@ export const POSITION_STYLE = {
   'Industry Parity':        { bg: 'bg-amber-100',  text: 'text-amber-800',  border: 'border-amber-300',  label: 'Industry Parity — Table stakes feature'    },
 };
 
-export default function CompetitorSelector({ competitors = [], onChange }) {
-  const [customInput, setCustomInput] = useState('');
-  const [showAll, setShowAll] = useState(false);
+export default function CompetitorSelector({ competitors = [], onChange, featureDescription = '', productDescription = '' }) {
+  const [customInput, setCustomInput]     = useState('');
+  const [showAll, setShowAll]             = useState(false);
+  const [researchState, setResearchState] = useState('idle'); // idle | loading | results | error
+  const [researchResults, setResearchResults] = useState([]);
+  const [researchError, setResearchError] = useState('');
 
   const visibleKnown = showAll ? KNOWN_COMPETITORS : KNOWN_COMPETITORS.slice(0, 6);
   const selectedNames = new Set(competitors.map(c => c.name));
@@ -62,6 +72,34 @@ export default function CompetitorSelector({ competitors = [], onChange }) {
     if (!name || selectedNames.has(name)) return;
     onChange([...competitors, { name, hasFeature: 'unknown' }]);
     setCustomInput('');
+  }
+
+  async function handleResearch() {
+    if (!competitors.length) return;
+    setResearchState('loading');
+    setResearchError('');
+    try {
+      const result = await researchCompetitors({
+        feature: featureDescription || 'this feature',
+        productDescription,
+        competitors,
+      });
+      setResearchResults(result.competitors || []);
+      setResearchState('results');
+    } catch (err) {
+      setResearchError(err.message || 'Research failed.');
+      setResearchState('error');
+    }
+  }
+
+  function applyResearch() {
+    const merged = competitors.map(c => {
+      const found = researchResults.find(r => r.name === c.name);
+      return found ? { ...c, hasFeature: found.hasFeature } : c;
+    });
+    onChange(merged);
+    setResearchState('idle');
+    setResearchResults([]);
   }
 
   const position = computeCompetitivePosition(competitors);
@@ -157,6 +195,68 @@ export default function CompetitorSelector({ competitors = [], onChange }) {
               </svg>
               {POSITION_STYLE[position].label}
             </div>
+          )}
+
+          {/* Research button */}
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={handleResearch}
+              disabled={researchState === 'loading'}
+              className="flex items-center gap-2 text-sm font-semibold text-genea-bright hover:text-genea-blue transition-colors disabled:opacity-50"
+            >
+              {researchState === 'loading' ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              )}
+              {researchState === 'loading' ? 'Researching with Claude...' : 'Research parity with Claude'}
+            </button>
+            <p className="text-xs text-gray-400 mt-1">Claude estimates from training data — review before applying.</p>
+          </div>
+
+          {/* Research results */}
+          {researchState === 'results' && researchResults.length > 0 && (
+            <div className="mt-3 bg-gray-50 rounded-xl border border-gray-200 p-3 space-y-2">
+              <p className="text-xs font-bold text-genea-navy uppercase tracking-wide mb-2">Claude's estimates — review before applying</p>
+              {researchResults.map(({ name, hasFeature, confidence, reason }) => {
+                const conf = CONFIDENCE_STYLE[confidence] || CONFIDENCE_STYLE.low;
+                const s = STATUS_CONFIG[hasFeature] || STATUS_CONFIG.unknown;
+                return (
+                  <div key={name} className="flex items-start gap-2 text-xs">
+                    <span className="font-medium text-gray-700 w-36 flex-shrink-0 truncate">{name}</span>
+                    <span className={`px-2 py-0.5 rounded font-semibold border flex-shrink-0 ${s.bg} ${s.text} ${s.border}`}>{s.label}</span>
+                    <span className={`px-2 py-0.5 rounded font-medium flex-shrink-0 ${conf.bg} ${conf.text}`}>{confidence}</span>
+                    <span className="text-gray-500 leading-tight">{reason}</span>
+                  </div>
+                );
+              })}
+              <div className="flex gap-2 pt-2 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={applyResearch}
+                  className="px-3 py-1.5 bg-genea-navy text-white text-xs font-semibold rounded-lg hover:bg-genea-blue transition-colors"
+                >
+                  Apply estimates
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResearchState('idle')}
+                  className="px-3 py-1.5 bg-white text-gray-600 text-xs font-semibold rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
+          {researchState === 'error' && (
+            <p className="text-xs text-red-500 mt-2">{researchError}</p>
           )}
         </div>
       )}

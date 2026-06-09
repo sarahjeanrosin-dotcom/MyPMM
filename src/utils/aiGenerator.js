@@ -1,3 +1,20 @@
+export async function researchCompetitors({ feature, productDescription, competitors }) {
+  const res = await fetch('/api/researchCompetitors', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      feature,
+      productDescription,
+      competitorNames: competitors.map(c => c.name),
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Request failed (${res.status})`);
+  }
+  return res.json();
+}
+
 export async function processRawRelease(rawText, tierLevel = 'Tier 2') {
   const res = await fetch('/api/processRelease', {
     method: 'POST',
@@ -14,6 +31,13 @@ export async function processRawRelease(rawText, tierLevel = 'Tier 2') {
 }
 
 export async function generateMarketingCopy(release) {
+  // Derive channel list from granular selectedCollateral
+  const CHANNEL_MAP = { linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube', email: 'Email' };
+  const selectedCollateral = release.selectedCollateral || [];
+  const selectedChannels = selectedCollateral
+    .filter(c => c in CHANNEL_MAP)
+    .map(c => CHANNEL_MAP[c]);
+
   const res = await fetch('/api/generateMarketingCopy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -24,6 +48,7 @@ export async function generateMarketingCopy(release) {
       productInformation: release.productInformation,
       endUserWhy: release.endUserWhy,
       tierLevel: release.tierLevel,
+      selectedChannels,
       competitors: release.competitors || [],
       playbookBrief: release.playbookBrief || {},
       targetVerticals: release.targetVerticals || [],

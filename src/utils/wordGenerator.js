@@ -234,7 +234,72 @@ function buildPlaybookChildren(content, isAppended = false) {
     );
   }
 
-  Object.entries(content.channels || {}).forEach(([channelName, ch]) => {
+  // Email channel first
+  const emailCh = content.channels?.Email;
+  if (emailCh) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'EMAIL COPY', bold: true, size: 24, color: 'FFFFFF', font: 'Calibri' })],
+        shading: { type: ShadingType.SOLID, color: NAVY_HEX, fill: NAVY_HEX },
+        spacing: { before: 320, after: 100 },
+        indent: { left: 80 },
+      }),
+      heading3('Subject Line'),
+      new Paragraph({
+        children: [new TextRun({ text: emailCh.subject || '', bold: true, size: 22, color: NAVY_HEX, font: 'Calibri' })],
+        spacing: { before: 0, after: 80 },
+      }),
+      ...(emailCh.preheader ? [new Paragraph({
+        children: [new TextRun({ text: `Preview: ${emailCh.preheader}`, size: 16, color: GRAY_HEX, italics: true, font: 'Calibri' })],
+        spacing: { before: 0, after: 120 },
+      })] : []),
+      heading3('Email Body'),
+      new Paragraph({
+        children: [new TextRun({ text: emailCh.body || '', size: 18, color: '1E293B', font: 'Calibri' })],
+        shading: { type: ShadingType.SOLID, color: 'F1F5F9', fill: 'F1F5F9' },
+        spacing: { before: 60, after: 120 },
+        indent: { left: 80, right: 80 },
+      }),
+      heading3('Calls to Action'),
+      ...[emailCh.cta1, emailCh.cta2].filter(Boolean).map(cta =>
+        new Paragraph({
+          children: [new TextRun({ text: cta, bold: true, size: 17, color: BLUE_HEX, font: 'Calibri' })],
+          spacing: { before: 40, after: 40 },
+        })
+      ),
+      ...((emailCh.verticalEmails || []).length > 0 ? [
+        heading3('Verticalized Emails'),
+        ...(emailCh.verticalEmails || []).flatMap(({ vertical, subject, body: vbody, cta2 }) => [
+          new Paragraph({
+            children: [new TextRun({ text: vertical || '', bold: true, size: 18, color: 'FFFFFF', font: 'Calibri' })],
+            shading: { type: ShadingType.SOLID, color: BRIGHT_HEX, fill: BRIGHT_HEX },
+            spacing: { before: 160, after: 60 },
+            indent: { left: 60 },
+          }),
+          ...(subject ? [new Paragraph({
+            children: [
+              new TextRun({ text: 'Subject: ', bold: true, size: 17, color: NAVY_HEX, font: 'Calibri' }),
+              new TextRun({ text: subject, size: 17, color: '1E293B', font: 'Calibri' }),
+            ],
+            spacing: { before: 0, after: 60 },
+          })] : []),
+          ...(vbody ? [new Paragraph({
+            children: [new TextRun({ text: vbody, size: 17, color: '1E293B', font: 'Calibri' })],
+            shading: { type: ShadingType.SOLID, color: 'E3F2FD', fill: 'E3F2FD' },
+            spacing: { before: 40, after: 60 },
+            indent: { left: 60, right: 60 },
+          })] : []),
+          ...(cta2 ? [new Paragraph({
+            children: [new TextRun({ text: cta2, bold: true, size: 16, color: BLUE_HEX, font: 'Calibri' })],
+            spacing: { before: 40, after: 40 },
+          })] : []),
+        ]),
+      ] : []),
+      divider(),
+    );
+  }
+
+  Object.entries(content.channels || {}).filter(([k]) => k !== 'Email').forEach(([channelName, ch]) => {
     const accent = channelAccents[channelName] || NAVY_HEX;
     children.push(
       new Paragraph({

@@ -1,5 +1,17 @@
-import { tierConfig } from '../config/tierConfig';
+import { tierConfig, COLLATERAL_CHANNEL_MAP } from '../config/tierConfig';
 import { computeCompetitivePosition } from '../components/CompetitorSelector';
+
+// Normalize old 'playbook' format → channel keys
+function normalizeCollateral(collateral, tierLevel) {
+  if (!collateral || collateral.length === 0) {
+    return tierConfig[tierLevel]?.collateralDefaults || ['brief', 'linkedin', 'youtube'];
+  }
+  // Migrate old ['brief','playbook'] format
+  if (collateral.includes('playbook') && !collateral.some(c => c in COLLATERAL_CHANNEL_MAP)) {
+    return tierConfig[tierLevel]?.collateralDefaults || ['brief', 'linkedin', 'youtube'];
+  }
+  return collateral;
+}
 
 export function generateProductBriefContent(release) {
   const competitors = release.competitors || [];
@@ -34,13 +46,13 @@ export function generateMarketingPlaybookContent(release) {
   const config = tierConfig[tier] || tierConfig['Tier 2'];
   const ai = release.marketingCopy;
 
-  if (config.channels.length === 0) {
-    return {
-      title: `Marketing Playbook: ${release.productName}`,
-      tier,
-      commsLevel: 'none',
-      channels: {},
-    };
+  const collateral = normalizeCollateral(release.selectedCollateral, tier);
+  const selectedChannels = collateral
+    .filter(c => c in COLLATERAL_CHANNEL_MAP)
+    .map(c => COLLATERAL_CHANNEL_MAP[c]);
+
+  if (selectedChannels.length === 0) {
+    return { title: `Marketing Playbook: ${release.productName}`, tier, commsLevel: 'none', channels: {} };
   }
 
   const fallback = {
@@ -63,13 +75,21 @@ export function generateMarketingPlaybookContent(release) {
       copy: `In this video, we walk through everything new in ${release.productName}.\n\nTopics covered:\n- What's new\n- Who it's for\n- How to get started\n\nSubscribe for more Genea product updates.`,
       cta: 'Subscribe and enable notifications',
       visualDirection: '16:9 product demo video. Screen recording with voiceover. Open on Genea branded intro card. Close with CTA card.',
-      audienceNotes: 'Mix of existing customers (retention/expansion) and prospects evaluating Genea. Include both end-user and admin perspective.',
+      audienceNotes: 'Mix of existing customers (retention/expansion) and prospects evaluating Genea.',
+    },
+    Email: {
+      subject: `Introducing ${release.productName}`,
+      preheader: `${release.endUserWhy || 'Now available for your team.'}`,
+      body: `Hi [First Name],\n\nWe're excited to announce ${release.productName} is now available.\n\n${release.productInformation}\n\nKey benefits:\n- Seamless experience for your team\n- Enterprise-grade security\n- Easy deployment\n\nThis is available to all customers on [DATE]. Your Customer Success Manager will be in touch with next steps.\n\nQuestions? Reply to this email or visit our Help Center.\n\nBest,\nThe Genea Team`,
+      cta1: '[SCHEDULE A DEMO - INSERT LINK]',
+      cta2: '[LEARN MORE - INSERT LINK]',
+      verticalEmails: [],
     },
   };
 
   const channels = {};
-  for (const channel of config.channels) {
-    channels[channel] = (ai && ai[channel]) ? ai[channel] : fallback[channel];
+  for (const channel of selectedChannels) {
+    channels[channel] = (ai && ai[channel]) ? ai[channel] : (fallback[channel] || {});
   }
 
   return { title: `Marketing Playbook: ${release.productName}`, tier, commsLevel: config.commsLevel, channels };

@@ -19,7 +19,7 @@ export const defaultRelease = {
   partnerWhy: '',
   helpCenterUrl: '',
   additionalResources: '',
-  selectedCollateral: ['brief', 'playbook'],
+  selectedCollateral: ['brief', 'linkedin', 'youtube', 'email'],
   competitors: [],
   targetVerticals: [],
   playbookBrief: { keyMessage: '', proofPoints: '', avoid: '' },

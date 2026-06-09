@@ -563,7 +563,106 @@ export function generateMarketingPlaybookPdf(content, logoDataUrl, opts = {}) {
     YouTube:   BRIGHT,
   };
 
-  Object.entries(channels).forEach(([channelName, ch]) => {
+  // Email channel rendered separately
+  if (channels.Email) {
+    const em = channels.Email;
+    doc.addPage();
+    header(doc, 'Marketing Playbook -- Email', logoDataUrl);
+    let y = 26;
+
+    doc.setFillColor(...NAVY);
+    doc.roundedRect(MARGIN, y, CONTENT, 11, 1, 1, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...WHITE);
+    doc.text('Email Copy', MARGIN + 5, y + 7.5);
+    y += 15;
+
+    y = sectionHeading(doc, 'Subject Line', y);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...NAVY);
+    const subLines = doc.splitTextToSize(sanitize(em.subject || ''), CONTENT);
+    doc.text(subLines, MARGIN, y);
+    y += subLines.length * 6 + 4;
+
+    if (em.preheader) {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...GRAY);
+      doc.text(sanitize(em.preheader), MARGIN, y);
+      y += 7;
+    }
+
+    y = checkPage(doc, y, 40);
+    if (y === 28) header(doc, 'Marketing Playbook -- Email', logoDataUrl);
+    y = sectionHeading(doc, 'Email Body', y);
+    const bodyLines = doc.splitTextToSize(sanitize(em.body || ''), CONTENT - 8);
+    const bodyH = bodyLines.length * 4.8 + 10;
+    doc.setFillColor(...LGRAY);
+    doc.roundedRect(MARGIN, y, CONTENT, bodyH, 1, 1, 'F');
+    doc.setFillColor(...NAVY);
+    doc.roundedRect(MARGIN, y, 3, bodyH, 1, 0, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...DARK);
+    doc.text(bodyLines, MARGIN + 6, y + 6);
+    y += bodyH + 6;
+
+    y = checkPage(doc, y, 20);
+    if (y === 28) header(doc, 'Marketing Playbook -- Email', logoDataUrl);
+    y = sectionHeading(doc, 'Calls to Action', y);
+    [em.cta1, em.cta2].filter(Boolean).forEach(cta => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...BLUE);
+      doc.text(sanitize(cta), MARGIN, y);
+      y += 7;
+    });
+
+    if ((em.verticalEmails || []).length > 0) {
+      y = checkPage(doc, y, 20);
+      if (y === 28) header(doc, 'Marketing Playbook -- Email', logoDataUrl);
+      y = sectionHeading(doc, 'Verticalized Emails', y);
+      em.verticalEmails.forEach(({ vertical, subject, body: vbody, cta2 }) => {
+        y = checkPage(doc, y, 30);
+        doc.setFillColor(...LIGHT);
+        doc.roundedRect(MARGIN, y, CONTENT, 7, 1, 1, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...NAVY);
+        doc.text(sanitize(vertical || ''), MARGIN + 4, y + 4.8);
+        y += 9;
+
+        if (subject) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(...DARK);
+          doc.text('Subject: ' + sanitize(subject), MARGIN + 4, y);
+          y += 5.5;
+        }
+        if (vbody) {
+          const vLines = doc.splitTextToSize(sanitize(vbody), CONTENT - 8);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(...DARK);
+          doc.text(vLines, MARGIN + 4, y);
+          y += vLines.length * 4.5 + 3;
+        }
+        if (cta2) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          doc.setTextColor(...BLUE);
+          doc.text(sanitize(cta2), MARGIN + 4, y);
+          y += 7;
+        }
+        y += 4;
+      });
+    }
+  }
+
+  const nonEmailChannels = Object.entries(channels).filter(([k]) => k !== 'Email');
+  nonEmailChannels.forEach(([channelName, ch]) => {
     doc.addPage();
     header(doc, `Marketing Playbook -- ${channelName}`, logoDataUrl);
 
