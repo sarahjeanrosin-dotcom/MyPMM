@@ -20,6 +20,12 @@ export const sampleRelease = {
   helpCenterUrl: 'https://help.getgenea.com/mobile-credential-3',
   additionalResources: `Release Notes: https://getgenea.com/release-notes/mc3\nProduct Video: https://youtube.com/genea/mc3-overview`,
   selectedCollateral: ['brief', 'playbook'],
+  competitors: [
+    { name: 'Openpath (Assa Abloy)', hasFeature: 'yes' },
+    { name: 'HID Global',           hasFeature: 'no'  },
+    { name: 'Brivo',                hasFeature: 'no'  },
+    { name: 'Verkada',              hasFeature: 'unknown' },
+  ],
   generatedProductBrief: null,
   generatedMarketingPlaybook: null,
 };

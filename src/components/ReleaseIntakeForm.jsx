@@ -2,8 +2,47 @@ import { useState } from 'react';
 import TierSelector from './TierSelector';
 import FileUpload from './FileUpload';
 import RoadmapTimeline from './RoadmapTimeline';
+import CompetitorSelector from './CompetitorSelector';
 import { sampleRelease } from '../data/sampleData';
 import { generateWhoWhatWhy } from '../utils/aiGenerator';
+
+const CURRENT_YEAR = new Date().getFullYear();
+const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
+const YEARS = [CURRENT_YEAR, CURRENT_YEAR + 1, CURRENT_YEAR + 2];
+
+function DateField({ value, onChange }) {
+  const isWindow = /^Q[1-4]-\d{4}$/.test(value || '');
+  const [mode, setMode] = useState(isWindow ? 'window' : 'specific');
+  const [q, setQ]   = useState(() => { const m = (value||'').match(/^(Q[1-4])/); return m ? m[1] : 'Q3'; });
+  const [yr, setYr] = useState(() => { const m = (value||'').match(/(\d{4})$/);  return m ? m[1] : String(CURRENT_YEAR + 1); });
+
+  function setWindow(newQ, newYr) { onChange(`${newQ}-${newYr}`); }
+
+  return (
+    <div>
+      <div className="flex gap-1 bg-gray-100 p-0.5 rounded-lg w-fit mb-2">
+        {[{id:'specific',label:'Exact date'},{id:'window',label:'Quarter'}].map(({id,label}) => (
+          <button key={id} type="button"
+            onClick={() => { setMode(id); if (id==='window') setWindow(q,yr); else onChange(''); }}
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${mode===id?'bg-white text-genea-navy shadow-sm':'text-gray-400 hover:text-gray-600'}`}
+          >{label}</button>
+        ))}
+      </div>
+      {mode === 'specific' ? (
+        <input type="date" value={value && !/^Q/.test(value) ? value : ''} onChange={e => onChange(e.target.value)} className="genea-input" />
+      ) : (
+        <div className="flex gap-2">
+          <select value={q} onChange={e => { setQ(e.target.value); setWindow(e.target.value, yr); }} className="genea-input flex-1">
+            {QUARTERS.map(qtr => <option key={qtr}>{qtr}</option>)}
+          </select>
+          <select value={yr} onChange={e => { setYr(e.target.value); setWindow(q, e.target.value); }} className="genea-input flex-1">
+            {YEARS.map(y => <option key={y}>{y}</option>)}
+          </select>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const STEPS = [
   { id: 1, label: 'Project Setup', icon: '⚙️' },
@@ -84,12 +123,7 @@ function Step1({ release, onChange }) {
           />
         </FormField>
         <FormField label="Release Date / Expected Release Date" required>
-          <input
-            type="date"
-            value={release.releaseDate || ''}
-            onChange={e => onChange({ releaseDate: e.target.value })}
-            className="genea-input"
-          />
+          <DateField value={release.releaseDate || ''} onChange={v => onChange({ releaseDate: v })} />
         </FormField>
       </div>
 
@@ -117,6 +151,13 @@ function Step1({ release, onChange }) {
         <div className="mt-1">
           <TierSelector value={release.tierLevel} onChange={v => onChange({ tierLevel: v })} />
         </div>
+      </FormField>
+
+      <FormField label="Competitive Context" hint="Optional — select competitors and mark whether they have this feature.">
+        <CompetitorSelector
+          competitors={release.competitors || []}
+          onChange={v => onChange({ competitors: v })}
+        />
       </FormField>
 
       <FormField label="What would you like to generate?" required hint="Select at least one. Both are combined into a single downloadable document.">

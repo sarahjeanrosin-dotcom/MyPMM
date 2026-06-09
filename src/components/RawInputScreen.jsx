@@ -1,14 +1,97 @@
 import { useState, useRef } from 'react';
 import TierSelector from './TierSelector';
+import CompetitorSelector from './CompetitorSelector';
 import { processRawRelease } from '../utils/aiGenerator';
 
+const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = [CURRENT_YEAR, CURRENT_YEAR + 1, CURRENT_YEAR + 2];
+
+function DateField({ value, onChange }) {
+  const [mode, setMode] = useState(() => {
+    if (!value) return 'specific';
+    return /^Q[1-4]-\d{4}$/.test(value) ? 'window' : 'specific';
+  });
+
+  const [q, setQ] = useState(() => {
+    const m = (value || '').match(/^(Q[1-4])-(\d{4})$/);
+    return m ? m[1] : 'Q3';
+  });
+  const [yr, setYr] = useState(() => {
+    const m = (value || '').match(/^Q[1-4]-(\d{4})$/);
+    return m ? m[1] : String(CURRENT_YEAR + 1);
+  });
+
+  function setWindow(newQ, newYr) {
+    onChange(`${newQ}-${newYr}`);
+  }
+
+  return (
+    <div>
+      {/* Mode toggle */}
+      <div className="flex gap-1 bg-gray-100 p-0.5 rounded-lg w-fit mb-2">
+        {[
+          { id: 'specific', label: 'Exact date' },
+          { id: 'window',   label: 'Quarter' },
+        ].map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => { setMode(id); if (id === 'window') setWindow(q, yr); else onChange(''); }}
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+              mode === id ? 'bg-white text-genea-navy shadow-sm' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'specific' ? (
+        <input
+          type="date"
+          value={value && !/^Q/.test(value) ? value : ''}
+          onChange={e => onChange(e.target.value)}
+          className="genea-input py-2 text-sm"
+        />
+      ) : (
+        <div className="flex gap-2">
+          <select
+            value={q}
+            onChange={e => { setQ(e.target.value); setWindow(e.target.value, yr); }}
+            className="genea-input py-2 text-sm flex-1"
+          >
+            {QUARTERS.map(qtr => <option key={qtr}>{qtr}</option>)}
+          </select>
+          <select
+            value={yr}
+            onChange={e => { setYr(e.target.value); setWindow(q, e.target.value); }}
+            className="genea-input py-2 text-sm flex-1"
+          >
+            {YEARS.map(y => <option key={y}>{y}</option>)}
+          </select>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RawInputScreen({ onProcessed, onManual }) {
-  const [rawText, setRawText] = useState('');
-  const [tierLevel, setTierLevel] = useState('Tier 2');
-  const [state, setState] = useState('idle'); // idle | loading | error
-  const [error, setError] = useState('');
-  const [dragging, setDragging] = useState(false);
+  const [rawText,      setRawText]      = useState('');
+  const [productName,  setProductName]  = useState('');
+  const [productSuite, setProductSuite] = useState('');
+  const [releaseDate,  setReleaseDate]  = useState('');
+  const [tierLevel,    setTierLevel]    = useState('Tier 2');
+  const [collateral,   setCollateral]   = useState(['brief', 'playbook']);
+  const [competitors,  setCompetitors]  = useState([]);
+  const [state,        setState]        = useState('idle');
+  const [error,        setError]        = useState('');
+  const [dragging,     setDragging]     = useState(false);
   const dropRef = useRef(null);
+
+  function toggleCollateral(key) {
+    setCollateral(c => c.includes(key) ? c.filter(k => k !== key) : [...c, key]);
+  }
 
   async function handleProcess() {
     if (!rawText.trim()) return;
@@ -16,7 +99,17 @@ export default function RawInputScreen({ onProcessed, onManual }) {
     setError('');
     try {
       const result = await processRawRelease(rawText, tierLevel);
-      onProcessed({ ...result, tierLevel, uploadedFiles: [], marketingCopy: result.marketingCopy || null });
+      onProcessed({
+        ...result,
+        tierLevel,
+        selectedCollateral: collateral,
+        productName:  productName.trim()  || result.productName  || '',
+        releaseDate:  releaseDate         || result.releaseDate   || '',
+        productSuite: productSuite.trim() || result.productSuite  || '',
+        competitors,
+        uploadedFiles: [],
+        marketingCopy: result.marketingCopy || null,
+      });
     } catch (err) {
       setError(err.message || 'Processing failed. Check your API key in Netlify environment settings.');
       setState('error');
@@ -36,22 +129,109 @@ export default function RawInputScreen({ onProcessed, onManual }) {
     }
   }
 
-  const wordCount = rawText.trim() ? rawText.trim().split(/\s+/).length : 0;
-  const canProcess = rawText.trim().length > 20;
+  const wordCount   = rawText.trim() ? rawText.trim().split(/\s+/).length : 0;
+  const canProcess  = rawText.trim().length > 20 && collateral.length > 0;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="max-w-3xl mx-auto px-4 py-10 space-y-5">
       {/* Header */}
-      <div className="mb-8">
+      <div>
         <h2 className="text-2xl font-extrabold text-genea-navy">New Release Project</h2>
-        <p className="text-gray-500 mt-1">
-          Paste your Teams message, donkey.ai output, or any product update text. Claude will extract and generate everything.
+        <p className="text-gray-500 mt-1 text-sm">
+          Fill in what you know, paste your release notes or Teams message, and Claude will do the rest.
         </p>
       </div>
 
-      {/* Paste zone */}
-      <div className="genea-card mb-6">
-        <label className="genea-label mb-2 block">Paste your release content</label>
+      {/* ── Release Details ─────────────────────────────────────── */}
+      <div className="genea-card space-y-4">
+        <h3 className="font-bold text-genea-navy text-base flex items-center gap-2">
+          <span className="w-6 h-6 bg-genea-navy rounded-full flex items-center justify-center text-white text-xs font-bold">1</span>
+          Release Details
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="genea-label">Product / Feature Name</label>
+            <input
+              type="text"
+              value={productName}
+              onChange={e => setProductName(e.target.value)}
+              placeholder="e.g. Mobile Credential 3.0"
+              className="genea-input text-sm py-2"
+            />
+          </div>
+          <div>
+            <label className="genea-label">Product Suite</label>
+            <input
+              type="text"
+              value={productSuite}
+              onChange={e => setProductSuite(e.target.value)}
+              placeholder="e.g. Genea Access Control"
+              className="genea-input text-sm py-2"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="genea-label">Release Date</label>
+            <DateField value={releaseDate} onChange={setReleaseDate} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tier + Collateral ────────────────────────────────────── */}
+      <div className="genea-card space-y-4">
+        <h3 className="font-bold text-genea-navy text-base flex items-center gap-2">
+          <span className="w-6 h-6 bg-genea-navy rounded-full flex items-center justify-center text-white text-xs font-bold">2</span>
+          Tier &amp; Marketing Plan
+        </h3>
+
+        <div>
+          <label className="genea-label">Release Tier</label>
+          <div className="mt-1">
+            <TierSelector value={tierLevel} onChange={setTierLevel} />
+          </div>
+        </div>
+
+        <div>
+          <label className="genea-label">What would you like to generate?</label>
+          <div className="flex gap-3 mt-1">
+            {[
+              { key: 'brief',    label: 'Product Brief',      desc: 'For Sales & CS' },
+              { key: 'playbook', label: 'Marketing Playbook', desc: 'Social copy & campaign' },
+            ].map(({ key, label, desc }) => {
+              const selected = collateral.includes(key);
+              return (
+                <label
+                  key={key}
+                  className={`flex items-start gap-3 cursor-pointer p-3 rounded-xl border-2 flex-1 transition-all select-none ${
+                    selected ? 'border-genea-bright bg-genea-light' : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleCollateral(key)}
+                    className="w-4 h-4 mt-0.5 text-genea-bright rounded border-gray-300 focus:ring-genea-bright flex-shrink-0"
+                  />
+                  <div>
+                    <p className={`font-semibold text-sm ${selected ? 'text-genea-navy' : 'text-gray-600'}`}>{label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Paste Content ────────────────────────────────────────── */}
+      <div className="genea-card">
+        <h3 className="font-bold text-genea-navy text-base flex items-center gap-2 mb-3">
+          <span className="w-6 h-6 bg-genea-navy rounded-full flex items-center justify-center text-white text-xs font-bold">3</span>
+          Release Content
+        </h3>
+        <p className="text-xs text-gray-400 mb-3">
+          Paste your Teams message, donkey.ai output, release notes, or any product update text. Claude will extract the summary, roadmap, audience info, and marketing angles.
+        </p>
 
         <div
           ref={dropRef}
@@ -64,37 +244,38 @@ export default function RawInputScreen({ onProcessed, onManual }) {
         >
           {dragging && (
             <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-genea-light/90 z-10 pointer-events-none">
-              <div className="text-center">
-                <svg className="w-8 h-8 text-genea-bright mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="text-genea-blue font-semibold text-sm">Drop to paste</p>
-              </div>
+              <p className="text-genea-blue font-semibold text-sm">Drop to paste</p>
             </div>
           )}
           <textarea
             value={rawText}
             onChange={e => { setRawText(e.target.value); if (state === 'error') setState('idle'); }}
-            placeholder={`Paste your Teams message or donkey.ai output here.\n\nExample:\n"Camera Wall Setup and Timeline View is now available in the mobile app. This feature allows users to view live and recorded camera feeds alongside access events in a unified timeline. Release date is May 7, 2026. Related to the Camera Wall desktop release and Arculeus Native API integration..."`}
-            rows={12}
+            placeholder={`Paste your release notes or Teams message here...\n\nExample: "Camera Wall Setup and Timeline View is now available in the mobile app. Users can view live and recorded feeds alongside access events. Release date May 7, 2026..."`}
+            rows={10}
             className="w-full p-4 bg-transparent text-sm text-gray-700 placeholder-gray-400 rounded-xl focus:outline-none resize-none"
           />
         </div>
-
         {wordCount > 0 && (
           <p className="text-xs text-gray-400 mt-1.5 text-right">{wordCount} words</p>
         )}
       </div>
 
-      {/* Tier selector */}
-      <div className="genea-card mb-6">
-        <label className="genea-label mb-3 block">Release Tier</label>
-        <TierSelector value={tierLevel} onChange={setTierLevel} />
+      {/* ── Competitive Context ───────────────────────────────────── */}
+      <div className="genea-card">
+        <h3 className="font-bold text-genea-navy text-base flex items-center gap-2 mb-1">
+          <span className="w-6 h-6 bg-genea-navy rounded-full flex items-center justify-center text-white text-xs font-bold">4</span>
+          Competitive Context
+          <span className="text-xs font-normal text-gray-400 ml-1">optional</span>
+        </h3>
+        <p className="text-xs text-gray-400 mb-4">
+          Select competitors to compare against. Mark whether they have this feature — this generates a competitive analysis table in the Product Brief.
+        </p>
+        <CompetitorSelector competitors={competitors} onChange={setCompetitors} />
       </div>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
           <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -106,13 +287,13 @@ export default function RawInputScreen({ onProcessed, onManual }) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-2">
         <button
           type="button"
           onClick={onManual}
           className="text-sm text-gray-400 hover:text-genea-navy transition-colors underline underline-offset-2"
         >
-          Enter manually instead
+          Use step-by-step form instead
         </button>
 
         <button
@@ -138,7 +319,7 @@ export default function RawInputScreen({ onProcessed, onManual }) {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Process with AI
+              Generate Release Materials
             </>
           )}
         </button>

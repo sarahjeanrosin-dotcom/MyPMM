@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import RoadmapTimeline from './RoadmapTimeline';
 import { GeneaLogoWhite } from './BrandTheme';
+import { POSITION_STYLE } from './CompetitorSelector';
+
+const FEATURE_STATUS = {
+  yes:     { label: 'Has it',   color: 'text-red-600',   bg: 'bg-red-50',    dot: 'bg-red-400'   },
+  no:      { label: "Doesn't",  color: 'text-green-600', bg: 'bg-green-50',  dot: 'bg-green-400' },
+  unknown: { label: 'Unknown',  color: 'text-gray-400',  bg: 'bg-gray-50',   dot: 'bg-gray-300'  },
+};
 
 function EditableField({ value, onChange, multiline = false, placeholder = '', className = '' }) {
   const [editing, setEditing] = useState(false);
@@ -130,6 +137,51 @@ export default function ProductBriefPreview({ content, onContentChange }) {
             </p>
           </div>
         </div>
+
+        {/* Competitive Context */}
+        {content.competitiveContext?.competitors?.length > 0 && (() => {
+          const { competitors, position } = content.competitiveContext;
+          const pos = position ? POSITION_STYLE[position] : null;
+          return (
+            <div className="mb-6">
+              <SectionHeader title="Competitive Context" color="bg-genea-blue" />
+              <div className="border border-t-0 border-gray-200 rounded-b-lg p-4">
+                {pos && (
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold mb-4 ${pos.bg} ${pos.text} ${pos.border}`}>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    {pos.label}
+                  </div>
+                )}
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="text-left px-3 py-2 text-xs font-bold text-genea-navy uppercase tracking-wide border border-gray-200 w-1/2">Competitor</th>
+                      <th className="text-left px-3 py-2 text-xs font-bold text-genea-navy uppercase tracking-wide border border-gray-200">Has This Feature?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {competitors.map(({ name, hasFeature }) => {
+                      const s = FEATURE_STATUS[hasFeature] || FEATURE_STATUS.unknown;
+                      return (
+                        <tr key={name} className="border-b border-gray-100">
+                          <td className="px-3 py-2 font-medium text-gray-800 border border-gray-200">{name}</td>
+                          <td className={`px-3 py-2 border border-gray-200 ${s.bg}`}>
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${s.color}`}>
+                              <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+                              {s.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Roadmap */}
         <div className="mb-6">

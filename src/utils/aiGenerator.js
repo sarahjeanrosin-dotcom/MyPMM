@@ -24,6 +24,18 @@ export async function generateMarketingCopy(release) {
       productInformation: release.productInformation,
       endUserWhy: release.endUserWhy,
       tierLevel: release.tierLevel,
+      competitors: release.competitors || [],
+      competitivePosition: release.competitors?.length
+        ? (() => {
+            const known = (release.competitors || []).filter(c => c.hasFeature !== 'unknown');
+            if (!known.length) return null;
+            const withFeature = known.filter(c => c.hasFeature === 'yes').length;
+            const ratio = withFeature / known.length;
+            if (ratio <= 0.25) return 'Market Leader';
+            if (ratio >= 0.75) return 'Industry Parity';
+            return 'Emerging Differentiator';
+          })()
+        : null,
     }),
   });
 

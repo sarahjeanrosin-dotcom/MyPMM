@@ -1,6 +1,8 @@
 import { tierConfig } from '../config/tierConfig';
+import { computeCompetitivePosition } from '../components/CompetitorSelector';
 
 export function generateProductBriefContent(release) {
+  const competitors = release.competitors || [];
   return {
     title: `Product Brief: ${release.productName}`,
     productSuite: release.productSuite,
@@ -20,6 +22,10 @@ export function generateProductBriefContent(release) {
     },
     helpCenterUrl: release.helpCenterUrl,
     additionalResources: release.additionalResources,
+    competitiveContext: competitors.length > 0 ? {
+      competitors,
+      position: computeCompetitivePosition(competitors),
+    } : null,
   };
 }
 

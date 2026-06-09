@@ -186,6 +186,73 @@ export function generateProductBriefPdf(content, logoDataUrl, opts = {}) {
   y = sectionHeading(doc, 'Product Summary', y);
   y = bodyText(doc, content.summary, MARGIN, y, CONTENT) + 6;
 
+  // ── Competitive Context ──
+  const compCtx = content.competitiveContext;
+  if (compCtx?.competitors?.length > 0) {
+    y = checkPage(doc, y, 50);
+    if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+
+    y = sectionHeading(doc, 'Competitive Context', y);
+
+    // Position badge
+    if (compCtx.position) {
+      const posColors = {
+        'Market Leader':           { fill: [220, 252, 231], text: [22, 101, 52]  },
+        'Emerging Differentiator': { fill: [219, 234, 254], text: [29, 78, 216]  },
+        'Industry Parity':         { fill: [254, 243, 199], text: [146, 64, 14]  },
+      };
+      const pc = posColors[compCtx.position] || posColors['Industry Parity'];
+      const badgeW = 90;
+      doc.setFillColor(...pc.fill);
+      doc.roundedRect(MARGIN, y, badgeW, 7, 1, 1, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...pc.text);
+      doc.text(compCtx.position, MARGIN + 4, y + 4.8);
+      y += 11;
+    }
+
+    // Table header
+    const col1W = CONTENT * 0.52;
+    const col2W = CONTENT - col1W;
+    doc.setFillColor(...LGRAY);
+    doc.rect(MARGIN, y, CONTENT, 7, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...NAVY);
+    doc.text('COMPETITOR', MARGIN + 3, y + 4.8);
+    doc.text('HAS THIS FEATURE?', MARGIN + col1W + 3, y + 4.8);
+    y += 7;
+
+    // Table rows
+    const statusLabel = { yes: 'Yes - Has it', no: "No - Doesn't have it", unknown: 'Unknown' };
+    const statusColor = { yes: [220, 38, 38], no: [22, 163, 74], unknown: [100, 116, 139] };
+
+    compCtx.competitors.forEach((item, i) => {
+      const rowH = 7;
+      if (i % 2 === 0) {
+        doc.setFillColor(250, 250, 250);
+        doc.rect(MARGIN, y, CONTENT, rowH, 'F');
+      }
+      doc.setDrawColor(...BORDER);
+      doc.setLineWidth(0.2);
+      doc.rect(MARGIN, y, CONTENT, rowH, 'S');
+      doc.line(MARGIN + col1W, y, MARGIN + col1W, y + rowH);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...DARK);
+      doc.text(sanitize(item.name || ''), MARGIN + 3, y + 4.8);
+
+      const sc = statusColor[item.hasFeature] || statusColor.unknown;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...sc);
+      doc.text(statusLabel[item.hasFeature] || 'Unknown', MARGIN + col1W + 3, y + 4.8);
+      y += rowH;
+    });
+    y += 8;
+  }
+
   // ── Roadmap ──
   y = checkPage(doc, y, 50);
   if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);

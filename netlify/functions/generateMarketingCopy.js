@@ -29,7 +29,7 @@ export default async function handler(req, context) {
     return new Response(JSON.stringify({ error: 'Invalid request body.' }), { status: 400 });
   }
 
-  const { productName, productSuite, releaseDate, productInformation, endUserWhy, tierLevel } = body;
+  const { productName, productSuite, releaseDate, productInformation, endUserWhy, tierLevel, competitors, competitivePosition } = body;
 
   const channels = TIER_CHANNELS[tierLevel] || TIER_CHANNELS['Tier 2'];
 
@@ -67,6 +67,20 @@ export default async function handler(req, context) {
 
   const schemaBody = channels.map(ch => channelSchemas[ch]).join(',\n');
 
+  const competitorLines = (competitors || []).map(c =>
+    `  - ${c.name}: ${c.hasFeature === 'yes' ? 'Has this feature' : c.hasFeature === 'no' ? 'Does NOT have this feature' : 'Unknown'}`
+  ).join('\n');
+
+  const competitorSection = competitorLines
+    ? `\nCompetitive Context:\n  Position: ${competitivePosition || 'Unknown'}\n${competitorLines}\n  Tone guidance: ${
+        competitivePosition === 'Market Leader'
+          ? 'Lead with innovation — we are first or ahead. Use bold, pioneering language.'
+          : competitivePosition === 'Industry Parity'
+          ? 'We are matching industry standards. Focus on our implementation quality, ease of use, and how this unlocks the next wave of features.'
+          : 'Differentiated feature in a mixed landscape. Highlight our unique approach.'
+      }`
+    : '';
+
   const prompt = `You are a product marketing expert at Genea Security. Write social media copy for this product release.
 
 Product: ${productName}
@@ -75,7 +89,7 @@ Release Date: ${releaseDate}
 Tier: ${tierLevel}
 Tier guidance: ${tierGuidance}
 Summary: ${productInformation}
-End User Value: ${endUserWhy}
+End User Value: ${endUserWhy}${competitorSection}
 
 IMPORTANT: Use plain ASCII text only. Do not use smart quotes, em-dashes, arrows (->  is OK), bullets, or any Unicode characters outside the basic ASCII range.
 

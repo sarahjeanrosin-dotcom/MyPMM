@@ -20,6 +20,7 @@ export const defaultRelease = {
   helpCenterUrl: '',
   additionalResources: '',
   selectedCollateral: ['brief', 'playbook'],
+  competitors: [],
   marketingCopy: null,
   generatedProductBrief: null,
   generatedMarketingPlaybook: null,
