@@ -1,9 +1,32 @@
 import {
-  Document, Packer, Paragraph, TextRun,
+  Document, Packer, Paragraph, TextRun, ImageRun,
   Table, TableRow, TableCell, WidthType, BorderStyle,
   AlignmentType, ShadingType, Header, Footer, PageNumber,
   ExternalHyperlink,
 } from 'docx';
+
+function dataUrlToBuffer(dataUrl) {
+  const base64 = dataUrl.split(',')[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+function logoHeaderChildren(logoDataUrl, subtitle) {
+  if (logoDataUrl) {
+    const buf = dataUrlToBuffer(logoDataUrl);
+    return [
+      new ImageRun({
+        data: buf,
+        transformation: { width: 120, height: 21 },
+        type: 'png',
+      }),
+      new TextRun({ text: `   |   ${subtitle}`, size: 16, color: GRAY_HEX, font: 'Calibri' }),
+    ];
+  }
+  return [new TextRun({ text: `GENEA  |  ${subtitle}`, size: 16, color: NAVY_HEX, bold: true, font: 'Calibri' })];
+}
 
 const NAVY_HEX  = '003865';
 const BLUE_HEX  = '1565C0';
@@ -106,7 +129,7 @@ function wwwTable(sections) {
 
 // ─── Product Brief Word Doc ──────────────────────────────────────
 
-export async function generateProductBriefDocx(content) {
+export async function generateProductBriefDocx(content, logoDataUrl) {
   const sections = [
     heading1(content.title.replace('Product Brief: ', '')),
 
@@ -190,7 +213,7 @@ export async function generateProductBriefDocx(content) {
       headers: {
         default: new Header({
           children: [new Paragraph({
-            children: [new TextRun({ text: 'GENEA  |  Product Brief', size: 16, color: NAVY_HEX, bold: true, font: 'Calibri' })],
+            children: logoHeaderChildren(logoDataUrl, 'Product Brief'),
           })],
         }),
       },
@@ -213,7 +236,7 @@ export async function generateProductBriefDocx(content) {
 
 // ─── Marketing Playbook Word Doc ─────────────────────────────────
 
-export async function generateMarketingPlaybookDocx(content) {
+export async function generateMarketingPlaybookDocx(content, logoDataUrl) {
   const channelAccents = { LinkedIn: NAVY_HEX, Instagram: BLUE_HEX, YouTube: BRIGHT_HEX };
 
   const children = [
@@ -266,7 +289,7 @@ export async function generateMarketingPlaybookDocx(content) {
       headers: {
         default: new Header({
           children: [new Paragraph({
-            children: [new TextRun({ text: 'GENEA  |  Marketing Playbook', size: 16, color: NAVY_HEX, bold: true, font: 'Calibri' })],
+            children: logoHeaderChildren(logoDataUrl, 'Marketing Playbook'),
           })],
         }),
       },

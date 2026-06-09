@@ -12,8 +12,9 @@ export default function DownloadButton({ type, content, format = 'pdf' }) {
     setState('loading');
     try {
       if (isWord) {
+        const logoDataUrl = await getLogoDataUrl('navy');
         const genFn = type === 'brief' ? generateProductBriefDocx : generateMarketingPlaybookDocx;
-        const blob  = await genFn(content);
+        const blob  = await genFn(content, logoDataUrl);
         const url   = URL.createObjectURL(blob);
         const a     = document.createElement('a');
         a.href      = url;
