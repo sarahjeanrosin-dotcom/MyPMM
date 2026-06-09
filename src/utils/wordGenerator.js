@@ -264,6 +264,20 @@ function buildPlaybookChildren(content, isAppended = false) {
       body(ch.visualDirection),
       heading3('Audience & Positioning Notes'),
       body(ch.audienceNotes),
+      ...((ch.verticalAngles || []).length > 0 ? [
+        heading3('Vertical Angles'),
+        ...(ch.verticalAngles || []).map(({ vertical, angle }) =>
+          new Paragraph({
+            children: [
+              new TextRun({ text: `${vertical}: `, bold: true, size: 17, color: NAVY_HEX, font: 'Calibri' }),
+              new TextRun({ text: angle || '', size: 17, color: '1E293B', font: 'Calibri' }),
+            ],
+            shading: { type: ShadingType.SOLID, color: 'E3F2FD', fill: 'E3F2FD' },
+            spacing: { before: 40, after: 40 },
+            indent: { left: 80, right: 80 },
+          })
+        ),
+      ] : []),
       divider(),
     );
   });

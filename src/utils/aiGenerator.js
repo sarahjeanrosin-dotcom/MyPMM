@@ -25,6 +25,8 @@ export async function generateMarketingCopy(release) {
       endUserWhy: release.endUserWhy,
       tierLevel: release.tierLevel,
       competitors: release.competitors || [],
+      playbookBrief: release.playbookBrief || {},
+      targetVerticals: release.targetVerticals || [],
       competitivePosition: release.competitors?.length
         ? (() => {
             const known = (release.competitors || []).filter(c => c.hasFeature !== 'unknown');

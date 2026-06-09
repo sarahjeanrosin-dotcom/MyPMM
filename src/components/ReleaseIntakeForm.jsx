@@ -3,6 +3,7 @@ import TierSelector from './TierSelector';
 import FileUpload from './FileUpload';
 import RoadmapTimeline from './RoadmapTimeline';
 import CompetitorSelector from './CompetitorSelector';
+import VerticalSelector from './VerticalSelector';
 import { sampleRelease } from '../data/sampleData';
 import { generateWhoWhatWhy } from '../utils/aiGenerator';
 
@@ -195,6 +196,55 @@ function Step1({ release, onChange }) {
           })}
         </div>
       </FormField>
+
+      {(release.selectedCollateral || []).includes('playbook') && (
+        <>
+          <FormField
+            label="Marketing Playbook Brief"
+            hint="Optional — Claude uses these as writing instructions for the social copy."
+          >
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Key message / main angle</label>
+                <textarea
+                  value={release.playbookBrief?.keyMessage || ''}
+                  onChange={e => onChange({ playbookBrief: { ...release.playbookBrief, keyMessage: e.target.value } })}
+                  placeholder="e.g. We're first to market with hands-free UWB unlock..."
+                  rows={2}
+                  className="genea-input text-sm resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Proof points to include</label>
+                <textarea
+                  value={release.playbookBrief?.proofPoints || ''}
+                  onChange={e => onChange({ playbookBrief: { ...release.playbookBrief, proofPoints: e.target.value } })}
+                  placeholder="e.g. Zero friction, Apple Watch support, enterprise-grade anti-passback..."
+                  rows={2}
+                  className="genea-input text-sm resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Avoid / do not mention</label>
+                <input
+                  type="text"
+                  value={release.playbookBrief?.avoid || ''}
+                  onChange={e => onChange({ playbookBrief: { ...release.playbookBrief, avoid: e.target.value } })}
+                  placeholder="e.g. Don't mention NFC fallback limitations..."
+                  className="genea-input text-sm"
+                />
+              </div>
+            </div>
+          </FormField>
+
+          <FormField label="Target Verticals" hint="Claude writes a tailored one-liner per vertical in each channel section.">
+            <VerticalSelector
+              selected={release.targetVerticals || []}
+              onChange={v => onChange({ targetVerticals: v })}
+            />
+          </FormField>
+        </>
+      )}
     </div>
   );
 }

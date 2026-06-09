@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import TierSelector from './TierSelector';
 import CompetitorSelector from './CompetitorSelector';
+import VerticalSelector from './VerticalSelector';
 import { processRawRelease } from '../utils/aiGenerator';
 
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
@@ -83,8 +84,10 @@ export default function RawInputScreen({ onProcessed, onManual }) {
   const [releaseDate,  setReleaseDate]  = useState('');
   const [tierLevel,    setTierLevel]    = useState('Tier 2');
   const [collateral,   setCollateral]   = useState(['brief', 'playbook']);
-  const [competitors,  setCompetitors]  = useState([]);
-  const [state,        setState]        = useState('idle');
+  const [competitors,    setCompetitors]    = useState([]);
+  const [targetVerticals,setTargetVerticals]= useState([]);
+  const [playbookBrief,  setPlaybookBrief]  = useState({ keyMessage: '', proofPoints: '', avoid: '' });
+  const [state,          setState]          = useState('idle');
   const [error,        setError]        = useState('');
   const [dragging,     setDragging]     = useState(false);
   const dropRef = useRef(null);
@@ -103,10 +106,12 @@ export default function RawInputScreen({ onProcessed, onManual }) {
         ...result,
         tierLevel,
         selectedCollateral: collateral,
-        productName:  productName.trim()  || result.productName  || '',
-        releaseDate:  releaseDate         || result.releaseDate   || '',
-        productSuite: productSuite.trim() || result.productSuite  || '',
+        productName:    productName.trim()  || result.productName  || '',
+        releaseDate:    releaseDate         || result.releaseDate   || '',
+        productSuite:   productSuite.trim() || result.productSuite  || '',
         competitors,
+        targetVerticals,
+        playbookBrief,
         uploadedFiles: [],
         marketingCopy: result.marketingCopy || null,
       });
@@ -272,6 +277,57 @@ export default function RawInputScreen({ onProcessed, onManual }) {
         </p>
         <CompetitorSelector competitors={competitors} onChange={setCompetitors} />
       </div>
+
+      {/* ── Playbook Brief ───────────────────────────────────────── */}
+      {collateral.includes('playbook') && (
+        <div className="genea-card space-y-4">
+          <h3 className="font-bold text-genea-navy text-base flex items-center gap-2">
+            <span className="w-6 h-6 bg-genea-bright rounded-full flex items-center justify-center text-white text-xs font-bold">5</span>
+            Marketing Playbook Brief
+            <span className="text-xs font-normal text-gray-400 ml-1">optional — guides Claude's copy</span>
+          </h3>
+
+          <div>
+            <label className="genea-label">Key message / main angle</label>
+            <textarea
+              value={playbookBrief.keyMessage}
+              onChange={e => setPlaybookBrief(b => ({ ...b, keyMessage: e.target.value }))}
+              placeholder="e.g. We're first to market with hands-free UWB unlock — no other access control vendor offers this on Apple Watch."
+              rows={2}
+              className="genea-input text-sm resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="genea-label">Proof points to include</label>
+            <textarea
+              value={playbookBrief.proofPoints}
+              onChange={e => setPlaybookBrief(b => ({ ...b, proofPoints: e.target.value }))}
+              placeholder="e.g. Zero friction at the door. Works on iPhone + Apple Watch. Anti-passback built in. Enterprise credential lifecycle management."
+              rows={2}
+              className="genea-input text-sm resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="genea-label">Avoid / do not mention</label>
+            <input
+              type="text"
+              value={playbookBrief.avoid}
+              onChange={e => setPlaybookBrief(b => ({ ...b, avoid: e.target.value }))}
+              placeholder="e.g. Don't mention NFC fallback limitations. Avoid direct competitor names."
+              className="genea-input text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="genea-label mb-2 block">Target Verticals
+              <span className="text-gray-400 font-normal ml-1 text-xs">— Claude writes a tailored angle per vertical in each channel</span>
+            </label>
+            <VerticalSelector selected={targetVerticals} onChange={setTargetVerticals} />
+          </div>
+        </div>
+      )}
 
       {/* Error */}
       {error && (

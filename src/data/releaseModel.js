@@ -21,6 +21,8 @@ export const defaultRelease = {
   additionalResources: '',
   selectedCollateral: ['brief', 'playbook'],
   competitors: [],
+  targetVerticals: [],
+  playbookBrief: { keyMessage: '', proofPoints: '', avoid: '' },
   marketingCopy: null,
   generatedProductBrief: null,
   generatedMarketingPlaybook: null,

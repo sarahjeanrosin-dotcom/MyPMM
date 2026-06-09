@@ -162,6 +162,21 @@ function ChannelCard({ channelName, channelData, onChannelChange }) {
             </p>
           </div>
         </div>
+
+        {/* Vertical Angles */}
+        {channelData.verticalAngles?.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-2">Vertical Angles</p>
+            <div className="space-y-2">
+              {channelData.verticalAngles.map(({ vertical, angle }, i) => (
+                <div key={vertical || i} className="bg-genea-light rounded-lg px-4 py-3 border border-genea-bright/25">
+                  <p className="text-xs font-bold text-genea-navy mb-1">{vertical}</p>
+                  <p className="text-sm text-gray-700">{angle}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

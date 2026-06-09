@@ -20,6 +20,12 @@ export const sampleRelease = {
   helpCenterUrl: 'https://help.getgenea.com/mobile-credential-3',
   additionalResources: `Release Notes: https://getgenea.com/release-notes/mc3\nProduct Video: https://youtube.com/genea/mc3-overview`,
   selectedCollateral: ['brief', 'playbook'],
+  targetVerticals: ['Healthcare', 'CRE (Commercial Real Estate)', 'Critical Infrastructure'],
+  playbookBrief: {
+    keyMessage: 'Genea Mobile Credential 3.0 is the only enterprise-grade UWB hands-free solution with native Apple Watch support.',
+    proofPoints: 'Zero friction at the door — no reaching for your phone. Works across iPhone and Apple Watch. Anti-passback and credential lifecycle management built in.',
+    avoid: 'Do not mention NFC fallback limitations or competitor comparison by name.',
+  },
   competitors: [
     { name: 'Openpath (Assa Abloy)', hasFeature: 'yes' },
     { name: 'HID Global',           hasFeature: 'no'  },

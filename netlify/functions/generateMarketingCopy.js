@@ -29,7 +29,9 @@ export default async function handler(req, context) {
     return new Response(JSON.stringify({ error: 'Invalid request body.' }), { status: 400 });
   }
 
-  const { productName, productSuite, releaseDate, productInformation, endUserWhy, tierLevel, competitors, competitivePosition } = body;
+  const { productName, productSuite, releaseDate, productInformation, endUserWhy,
+          tierLevel, competitors, competitivePosition,
+          playbookBrief, targetVerticals } = body;
 
   const channels = TIER_CHANNELS[tierLevel] || TIER_CHANNELS['Tier 2'];
 
@@ -40,45 +42,62 @@ export default async function handler(req, context) {
 
   const tierGuidance = TIER_GUIDANCE[tierLevel] || TIER_GUIDANCE['Tier 2'];
 
+  // Vertical angles schema snippet (added to each channel if verticals selected)
+  const verticals = (targetVerticals || []);
+  const verticalSchemaSnippet = verticals.length
+    ? `,\n    "verticalAngles": [${verticals.map(v => `{"vertical": "${v}", "angle": "1 plain-ASCII sentence tailored for ${v} audience"}`).join(', ')}]`
+    : '';
+
   // Build the JSON schema only for the relevant channels
+  const channelSchema = (name, copySpec) => `  "${name}": {
+    "headline": ${copySpec.headline},
+    "copy": ${copySpec.copy},
+    "cta": "Call-to-action. Plain ASCII only.",
+    "visualDirection": "1-2 sentences on ideal visual direction.",
+    "audienceNotes": "1-2 sentences on target audience and positioning."${verticalSchemaSnippet}
+  }`;
+
   const channelSchemas = {
-    LinkedIn: `  "LinkedIn": {
-    "headline": "Punchy professional headline, under 15 words",
-    "copy": "Complete LinkedIn post, 150-250 words. Lead with value, end with CTA. Professional but engaging. Use plain ASCII only.",
-    "cta": "Call-to-action text. Plain text only, no special characters.",
-    "visualDirection": "1-2 sentences on ideal visual or creative direction.",
-    "audienceNotes": "1-2 sentences on target audience and positioning."
-  }`,
-    Instagram: `  "Instagram": {
-    "headline": "Short punchy hook, under 10 words",
-    "copy": "Complete Instagram caption, 80-150 words. Punchy, benefit-led, conversational. End with hashtags. Use plain ASCII only.",
-    "cta": "Call-to-action text. Plain text only, no special characters.",
-    "visualDirection": "1-2 sentences on format and style.",
-    "audienceNotes": "1-2 sentences on target audience and positioning."
-  }`,
-    YouTube: `  "YouTube": {
-    "headline": "Searchable, compelling video title, under 70 chars",
-    "copy": "Video description with topics covered, CTA to subscribe, relevant keywords. 100-200 words. Use plain ASCII only.",
-    "cta": "Call-to-action text. Plain text only, no special characters.",
-    "visualDirection": "1-2 sentences on video format and what to show on screen.",
-    "audienceNotes": "1-2 sentences on target audience and positioning."
-  }`,
+    LinkedIn: channelSchema('LinkedIn', {
+      headline: '"Punchy professional headline, under 15 words"',
+      copy:     '"Complete LinkedIn post, 150-250 words. Lead with value, end with CTA. Plain ASCII only."',
+    }),
+    Instagram: channelSchema('Instagram', {
+      headline: '"Short punchy hook, under 10 words"',
+      copy:     '"Complete Instagram caption, 80-150 words. Punchy, benefit-led. End with hashtags. Plain ASCII only."',
+    }),
+    YouTube: channelSchema('YouTube', {
+      headline: '"Searchable video title, under 70 chars"',
+      copy:     '"Video description with topics covered + subscribe CTA. 100-200 words. Plain ASCII only."',
+    }),
   };
 
   const schemaBody = channels.map(ch => channelSchemas[ch]).join(',\n');
 
+  // Competitive context block
   const competitorLines = (competitors || []).map(c =>
     `  - ${c.name}: ${c.hasFeature === 'yes' ? 'Has this feature' : c.hasFeature === 'no' ? 'Does NOT have this feature' : 'Unknown'}`
   ).join('\n');
-
   const competitorSection = competitorLines
-    ? `\nCompetitive Context:\n  Position: ${competitivePosition || 'Unknown'}\n${competitorLines}\n  Tone guidance: ${
+    ? `\nCompetitive Context:\n  Position: ${competitivePosition || 'Unknown'}\n${competitorLines}\n  Tone: ${
         competitivePosition === 'Market Leader'
-          ? 'Lead with innovation — we are first or ahead. Use bold, pioneering language.'
+          ? 'Lead with innovation — we are first or ahead. Bold, pioneering language.'
           : competitivePosition === 'Industry Parity'
-          ? 'We are matching industry standards. Focus on our implementation quality, ease of use, and how this unlocks the next wave of features.'
+          ? 'We match the industry standard. Focus on implementation quality and what this unlocks next.'
           : 'Differentiated feature in a mixed landscape. Highlight our unique approach.'
       }`
+    : '';
+
+  // Playbook brief block
+  const briefSection = (playbookBrief?.keyMessage || playbookBrief?.proofPoints || playbookBrief?.avoid)
+    ? `\nMarketing Brief (follow these instructions closely):\n${
+        playbookBrief.keyMessage  ? `  Key message: ${playbookBrief.keyMessage}\n`  : ''
+      }${playbookBrief.proofPoints ? `  Proof points to include: ${playbookBrief.proofPoints}\n` : ''
+      }${playbookBrief.avoid      ? `  Avoid / do not mention: ${playbookBrief.avoid}\n`        : ''}`
+    : '';
+
+  const verticalSection = verticals.length
+    ? `\nTarget Verticals: ${verticals.join(', ')}\nFor each vertical, write a 1-sentence tailored angle in "verticalAngles" showing how this feature solves that vertical's specific pain point.`
     : '';
 
   const prompt = `You are a product marketing expert at Genea Security. Write social media copy for this product release.
@@ -89,11 +108,11 @@ Release Date: ${releaseDate}
 Tier: ${tierLevel}
 Tier guidance: ${tierGuidance}
 Summary: ${productInformation}
-End User Value: ${endUserWhy}${competitorSection}
+End User Value: ${endUserWhy}${briefSection}${competitorSection}${verticalSection}
 
-IMPORTANT: Use plain ASCII text only. Do not use smart quotes, em-dashes, arrows (->  is OK), bullets, or any Unicode characters outside the basic ASCII range.
+IMPORTANT: Use plain ASCII text only. No smart quotes, em-dashes, special arrows, bullets, or Unicode outside basic ASCII.
 
-Return ONLY valid JSON — no markdown, no code blocks, no explanation. Only include the channels listed below:
+Return ONLY valid JSON. No markdown, no code blocks, no explanation. Only include the channels listed below:
 
 {
 ${schemaBody}
@@ -109,7 +128,7 @@ ${schemaBody}
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1800,
+        max_tokens: 2800,
         messages: [
           { role: 'user', content: prompt },
           { role: 'assistant', content: '{' },

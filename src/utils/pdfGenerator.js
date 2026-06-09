@@ -642,6 +642,34 @@ export function generateMarketingPlaybookPdf(content, logoDataUrl, opts = {}) {
     doc.setFontSize(9);
     doc.setTextColor(...DARK);
     doc.text(audLines, MARGIN + 5, y + 6);
+    y += audH + 6;
+
+    // VERTICAL ANGLES
+    const angles = ch.verticalAngles || [];
+    if (angles.length > 0) {
+      y = checkPage(doc, y, 20 + angles.length * 14);
+      if (y === 28) header(doc, `Marketing Playbook -- ${channelName}`, logoDataUrl);
+      y = sectionHeading(doc, 'Vertical Angles', y);
+
+      angles.forEach(({ vertical, angle }) => {
+        const angleLines = doc.splitTextToSize(sanitize(angle || ''), CONTENT - 30);
+        const rowH = angleLines.length * 4.8 + 10;
+        y = checkPage(doc, y, rowH + 4);
+
+        doc.setFillColor(...LIGHT);
+        doc.roundedRect(MARGIN, y, CONTENT, rowH, 1, 1, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...NAVY);
+        doc.text(sanitize(vertical || ''), MARGIN + 4, y + 5.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...DARK);
+        doc.text(angleLines, MARGIN + 28, y + 5.5);
+        y += rowH + 3;
+      });
+      y += 4;
+    }
   });
 
   if (!skipFooters) {
