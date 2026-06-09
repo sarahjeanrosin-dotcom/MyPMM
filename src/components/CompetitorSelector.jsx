@@ -84,7 +84,9 @@ export default function CompetitorSelector({ competitors = [], onChange, feature
         productDescription,
         competitors,
       });
-      setResearchResults(result.competitors || []);
+      const list = result.competitors || [];
+      list._searchUsed = result.searchUsed;
+      setResearchResults(list);
       setResearchState('results');
     } catch (err) {
       setResearchError(err.message || 'Research failed.');
@@ -222,17 +224,49 @@ export default function CompetitorSelector({ competitors = [], onChange, feature
 
           {/* Research results */}
           {researchState === 'results' && researchResults.length > 0 && (
-            <div className="mt-3 bg-gray-50 rounded-xl border border-gray-200 p-3 space-y-2">
-              <p className="text-xs font-bold text-genea-navy uppercase tracking-wide mb-2">Claude's estimates — review before applying</p>
-              {researchResults.map(({ name, hasFeature, confidence, reason }) => {
+            <div className="mt-3 bg-gray-50 rounded-xl border border-gray-200 p-3 space-y-2.5">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-bold text-genea-navy uppercase tracking-wide">
+                  {researchResults._searchUsed !== false
+                    ? 'Live search results — review before applying'
+                    : 'Training data estimates — review before applying'}
+                </p>
+                {researchResults._searchUsed !== false ? (
+                  <span className="text-xs bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
+                    Live search
+                  </span>
+                ) : (
+                  <span className="text-xs bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">
+                    Training data
+                  </span>
+                )}
+              </div>
+              {researchResults.map(({ name, hasFeature, confidence, reason, sources }) => {
                 const conf = CONFIDENCE_STYLE[confidence] || CONFIDENCE_STYLE.low;
                 const s = STATUS_CONFIG[hasFeature] || STATUS_CONFIG.unknown;
                 return (
-                  <div key={name} className="flex items-start gap-2 text-xs">
-                    <span className="font-medium text-gray-700 w-36 flex-shrink-0 truncate">{name}</span>
-                    <span className={`px-2 py-0.5 rounded font-semibold border flex-shrink-0 ${s.bg} ${s.text} ${s.border}`}>{s.label}</span>
-                    <span className={`px-2 py-0.5 rounded font-medium flex-shrink-0 ${conf.bg} ${conf.text}`}>{confidence}</span>
-                    <span className="text-gray-500 leading-tight">{reason}</span>
+                  <div key={name} className="space-y-1">
+                    <div className="flex items-start gap-2 text-xs">
+                      <span className="font-medium text-gray-700 w-32 flex-shrink-0 truncate">{name}</span>
+                      <span className={`px-2 py-0.5 rounded font-semibold border flex-shrink-0 ${s.bg} ${s.text} ${s.border}`}>{s.label}</span>
+                      <span className={`px-2 py-0.5 rounded font-medium flex-shrink-0 ${conf.bg} ${conf.text}`}>{confidence}</span>
+                      <span className="text-gray-500 leading-tight">{reason}</span>
+                    </div>
+                    {sources?.length > 0 && (
+                      <div className="ml-32 flex flex-wrap gap-1">
+                        {sources.slice(0, 2).map((url, i) => (
+                          <a
+                            key={i}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-genea-bright hover:underline truncate max-w-xs"
+                          >
+                            {new URL(url).hostname}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
