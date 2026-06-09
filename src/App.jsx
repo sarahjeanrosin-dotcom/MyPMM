@@ -4,12 +4,14 @@ import { sampleRelease } from './data/sampleData';
 import { detectMissingInfo } from './utils/missingInfoDetector';
 import { generateProductBriefContent, generateMarketingPlaybookContent } from './utils/contentGenerator';
 import { generateMarketingCopy } from './utils/aiGenerator';
+import { generateCombinedPdf } from './utils/pdfGenerator';
+import { generateCombinedDocx } from './utils/wordGenerator';
+import { getLogoDataUrl } from './utils/logoUtils';
 import ReleaseIntakeForm from './components/ReleaseIntakeForm';
 import RawInputScreen from './components/RawInputScreen';
 import MissingInfoQuestions from './components/MissingInfoQuestions';
 import ProductBriefPreview from './components/ProductBriefPreview';
 import MarketingPlaybookPreview from './components/MarketingPlaybookPreview';
-import PdfDownloadButton from './components/PdfDownloadButton';
 import { GeneaLogo, GeneaLogoWhite } from './components/BrandTheme';
 
 const STORAGE_KEY = 'genea_pmm_release';
@@ -229,76 +231,122 @@ function ReviewScreen({ release, onUpdate, onGenerate, onBack }) {
 // Documents View — tabbed, SaaS layout
 // ───────────────────────────────────────────────────────────────
 function DocumentsView({ release, briefContent, playbookContent, onBriefChange, onPlaybookChange, onBack }) {
-  const [activeTab, setActiveTab] = useState('brief');
+  const hasBrief    = Boolean(briefContent);
+  const hasPlaybook = Boolean(playbookContent);
 
   const tabs = [
-    { id: 'brief',    label: 'Product Brief',      dot: 'bg-genea-navy' },
-    { id: 'playbook', label: 'Marketing Playbook',  dot: 'bg-genea-bright' },
-  ];
+    hasBrief    && { id: 'brief',    label: 'Product Brief',     dot: 'bg-genea-navy' },
+    hasPlaybook && { id: 'playbook', label: 'Marketing Playbook', dot: 'bg-genea-bright' },
+  ].filter(Boolean);
+
+  const [activeTab, setActiveTab] = useState(tabs[0]?.id || 'brief');
+  const [dlState, setDlState] = useState(null); // 'pdf' | 'word' | null
+
+  async function handleDownload(format) {
+    setDlState(format);
+    try {
+      if (format === 'pdf') {
+        const logo = await getLogoDataUrl('white');
+        const doc  = generateCombinedPdf(hasBrief ? briefContent : null, hasPlaybook ? playbookContent : null, logo);
+        doc.save('Genea-Product-Release.pdf');
+      } else {
+        const logo = await getLogoDataUrl('navy');
+        const blob = await generateCombinedDocx(hasBrief ? briefContent : null, hasPlaybook ? playbookContent : null, logo);
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'Genea-Product-Release.docx';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      setTimeout(() => setDlState(null), 2000);
+    } catch (err) {
+      console.error(err);
+      setDlState(null);
+    }
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Page header */}
-      <div className="mb-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-genea-navy mb-3 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Edit Inputs
-        </button>
-        <h2 className="text-2xl font-extrabold text-genea-navy leading-tight">{release.productName}</h2>
-        <p className="text-sm text-gray-400 mt-0.5">
-          {release.productSuite}{release.releaseDate ? `  ·  ${release.releaseDate}` : ''}
-          {' '}· Click any field to edit before downloading.
-        </p>
+      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
+        <div>
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-genea-navy mb-3 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Edit Inputs
+          </button>
+          <h2 className="text-2xl font-extrabold text-genea-navy leading-tight">{release.productName}</h2>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {release.productSuite}{release.releaseDate ? `  ·  ${release.releaseDate}` : ''}
+            {' '}· Click any field to edit before downloading.
+          </p>
+        </div>
+
+        {/* Combined download buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {[
+            { fmt: 'word', label: 'Download .docx', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+            { fmt: 'pdf',  label: 'Download PDF',  icon: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+          ].map(({ fmt, label, icon }) => (
+            <button
+              key={fmt}
+              onClick={() => handleDownload(fmt)}
+              disabled={dlState !== null}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all border ${
+                dlState === fmt
+                  ? 'bg-green-50 text-green-700 border-green-200'
+                  : fmt === 'word'
+                  ? 'bg-white text-genea-navy border-genea-navy/30 hover:bg-genea-light hover:border-genea-navy'
+                  : 'bg-genea-navy text-white border-transparent hover:bg-genea-blue'
+              } ${dlState !== null && dlState !== fmt ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {dlState === fmt ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+                </svg>
+              )}
+              {dlState === fmt ? 'Downloaded!' : label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-gray-200 mb-6 gap-0">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all -mb-px ${
-              activeTab === tab.id
-                ? 'border-genea-navy text-genea-navy'
-                : 'border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <span className={`w-2 h-2 rounded-full ${tab.dot}`} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      {activeTab === 'brief' && (
-        <div>
-          <div className="flex items-center justify-between mb-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Product Brief for Sales</p>
-            <div className="flex items-center gap-2">
-              <PdfDownloadButton type="brief" content={briefContent} format="word" />
-              <PdfDownloadButton type="brief" content={briefContent} format="pdf" />
-            </div>
-          </div>
-          <ProductBriefPreview content={briefContent} onContentChange={onBriefChange} />
+      {tabs.length > 1 && (
+        <div className="flex border-b border-gray-200 mb-6 gap-0">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all -mb-px ${
+                activeTab === tab.id
+                  ? 'border-genea-navy text-genea-navy'
+                  : 'border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${tab.dot}`} />
+              {tab.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {activeTab === 'playbook' && (
-        <div>
-          <div className="flex items-center justify-between mb-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Marketing Playbook</p>
-            <div className="flex items-center gap-2">
-              <PdfDownloadButton type="playbook" content={playbookContent} format="word" />
-              <PdfDownloadButton type="playbook" content={playbookContent} format="pdf" />
-            </div>
-          </div>
-          <MarketingPlaybookPreview content={playbookContent} onContentChange={onPlaybookChange} />
-        </div>
+      {/* Tab content */}
+      {(activeTab === 'brief' && hasBrief) && (
+        <ProductBriefPreview content={briefContent} onContentChange={onBriefChange} />
+      )}
+      {(activeTab === 'playbook' && hasPlaybook) && (
+        <MarketingPlaybookPreview content={playbookContent} onContentChange={onPlaybookChange} />
       )}
     </div>
   );
@@ -388,14 +436,18 @@ export default function App() {
   async function handleGenerate() {
     setView('generating');
     try {
+      const collateral = release.selectedCollateral || ['brief', 'playbook'];
+      const wantsBrief    = collateral.includes('brief');
+      const wantsPlaybook = collateral.includes('playbook');
+
       let releaseWithCopy = release;
-      if (!release.marketingCopy && release.tierLevel !== 'Tier 4') {
+      if (wantsPlaybook && !release.marketingCopy && release.tierLevel !== 'Tier 4') {
         const copy = await generateMarketingCopy(release);
         releaseWithCopy = { ...release, marketingCopy: copy };
         setRelease(releaseWithCopy);
       }
-      const brief = generateProductBriefContent(releaseWithCopy);
-      const playbook = generateMarketingPlaybookContent(releaseWithCopy);
+      const brief   = wantsBrief    ? generateProductBriefContent(releaseWithCopy)    : null;
+      const playbook = wantsPlaybook ? generateMarketingPlaybookContent(releaseWithCopy) : null;
       setBriefContent(brief);
       setPlaybookContent(playbook);
       setRelease(r => ({ ...releaseWithCopy, generatedProductBrief: brief, generatedMarketingPlaybook: playbook }));
@@ -485,7 +537,7 @@ export default function App() {
           />
         )}
 
-        {view === 'documents' && briefContent && playbookContent && (
+        {view === 'documents' && (briefContent || playbookContent) && (
           <DocumentsView
             release={release}
             briefContent={briefContent}
@@ -496,7 +548,7 @@ export default function App() {
           />
         )}
 
-        {view === 'documents' && (!briefContent || !playbookContent) && (
+        {view === 'documents' && !briefContent && !playbookContent && (
           <div className="max-w-xl mx-auto px-4 py-16 text-center">
             <p className="text-gray-500 mb-4">No documents generated yet.</p>
             <button

@@ -19,6 +19,7 @@ export const defaultRelease = {
   partnerWhy: '',
   helpCenterUrl: '',
   additionalResources: '',
+  selectedCollateral: ['brief', 'playbook'],
   marketingCopy: null,
   generatedProductBrief: null,
   generatedMarketingPlaybook: null,

@@ -19,6 +19,7 @@ export const sampleRelease = {
   partnerWhy: 'Enables premium seamless access experiences for enterprise deployments',
   helpCenterUrl: 'https://help.getgenea.com/mobile-credential-3',
   additionalResources: `Release Notes: https://getgenea.com/release-notes/mc3\nProduct Video: https://youtube.com/genea/mc3-overview`,
+  selectedCollateral: ['brief', 'playbook'],
   generatedProductBrief: null,
   generatedMarketingPlaybook: null,
 };

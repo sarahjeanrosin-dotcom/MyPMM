@@ -127,12 +127,11 @@ function wwwTable(sections) {
   });
 }
 
-// ─── Product Brief Word Doc ──────────────────────────────────────
+// ─── Content builders (extracted so combined doc can reuse them) ─
 
-export async function generateProductBriefDocx(content, logoDataUrl) {
-  const sections = [
+function buildBriefChildren(content) {
+  const children = [
     heading1(content.title.replace('Product Brief: ', '')),
-
     new Paragraph({
       children: [
         new TextRun({ text: (content.productSuite || ''), size: 18, color: GRAY_HEX, font: 'Calibri' }),
@@ -141,11 +140,8 @@ export async function generateProductBriefDocx(content, logoDataUrl) {
       ],
       spacing: { before: 0, after: 200 },
     }),
-
     divider(),
-
     ...labeledField('Related Releases', content.relatedReleases),
-
     ...(content.helpCenterUrl ? [
       new Paragraph({
         children: [
@@ -158,10 +154,8 @@ export async function generateProductBriefDocx(content, logoDataUrl) {
         spacing: { before: 120, after: 200 },
       }),
     ] : []),
-
     heading2('Product Summary'),
     body(content.summary),
-
     heading2('Product Roadmap'),
     ...(content.roadmapItems || []).map(item =>
       new Paragraph({
@@ -176,21 +170,18 @@ export async function generateProductBriefDocx(content, logoDataUrl) {
         bullet: { level: 0 },
       })
     ),
-
     heading2('End Users'),
     wwwTable([
       { label: 'WHAT', text: content.endUser?.what },
       { label: 'WHO',  text: content.endUser?.who },
       { label: 'WHY',  text: content.endUser?.why },
     ]),
-
     heading2('Integrators & Partners'),
     wwwTable([
       { label: 'WHAT', text: content.partner?.what },
       { label: 'WHO',  text: content.partner?.who },
       { label: 'WHY',  text: content.partner?.why },
     ]),
-
     ...(content.helpCenterUrl || content.additionalResources ? [
       heading2('Additional Resources'),
       ...(content.helpCenterUrl ? [linkParagraph('Help Center:', content.helpCenterUrl)] : []),
@@ -205,42 +196,24 @@ export async function generateProductBriefDocx(content, logoDataUrl) {
       })),
     ] : []),
   ];
-
-  const doc = new Document({
-    sections: [{
-      properties: {},
-      children: sections,
-      headers: {
-        default: new Header({
-          children: [new Paragraph({
-            children: logoHeaderChildren(logoDataUrl, 'Product Brief'),
-          })],
-        }),
-      },
-      footers: {
-        default: new Footer({
-          children: [new Paragraph({
-            children: [
-              new TextRun({ text: '© Genea Security — Confidential    ', size: 14, color: GRAY_HEX, font: 'Calibri' }),
-              new TextRun({ children: [PageNumber.CURRENT], size: 14, color: GRAY_HEX, font: 'Calibri' }),
-            ],
-            alignment: AlignmentType.CENTER,
-          })],
-        }),
-      },
-    }],
-  });
-
-  return Packer.toBlob(doc);
+  return children;
 }
 
-// ─── Marketing Playbook Word Doc ─────────────────────────────────
-
-export async function generateMarketingPlaybookDocx(content, logoDataUrl) {
+function buildPlaybookChildren(content, isAppended = false) {
   const channelAccents = { LinkedIn: NAVY_HEX, Instagram: BLUE_HEX, YouTube: BRIGHT_HEX };
 
   const children = [
-    heading1(content.title.replace('Marketing Playbook: ', '')),
+    new Paragraph({
+      children: [new TextRun({ text: 'MARKETING PLAYBOOK', bold: true, size: 28, color: 'FFFFFF', font: 'Calibri' })],
+      shading: { type: ShadingType.SOLID, color: NAVY_HEX, fill: NAVY_HEX },
+      spacing: { before: isAppended ? 0 : 0, after: 80 },
+      indent: { left: 80 },
+      pageBreakBefore: isAppended,
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: content.title.replace('Marketing Playbook: ', ''), bold: true, size: 22, color: NAVY_HEX, font: 'Calibri' })],
+      spacing: { before: 120, after: 60 },
+    }),
     new Paragraph({
       children: [new TextRun({ text: `${content.tier || ''}  ·  Generated ${new Date().toLocaleDateString()}`, size: 18, color: GRAY_HEX, font: 'Calibri' })],
       spacing: { before: 0, after: 240 },
@@ -248,9 +221,21 @@ export async function generateMarketingPlaybookDocx(content, logoDataUrl) {
     divider(),
   ];
 
+  if (!content.channels || Object.keys(content.channels).length === 0) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Release Notes Only', bold: true, size: 20, color: GRAY_HEX, font: 'Calibri' })],
+        spacing: { before: 160, after: 80 },
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: 'Tier 4 release. No marketing materials required. Log in release notes only.', size: 18, color: GRAY_HEX, font: 'Calibri' })],
+        spacing: { before: 0, after: 160 },
+      }),
+    );
+  }
+
   Object.entries(content.channels || {}).forEach(([channelName, ch]) => {
     const accent = channelAccents[channelName] || NAVY_HEX;
-
     children.push(
       new Paragraph({
         children: [new TextRun({ text: channelName.toUpperCase(), bold: true, size: 24, color: 'FFFFFF', font: 'Calibri' })],
@@ -283,21 +268,24 @@ export async function generateMarketingPlaybookDocx(content, logoDataUrl) {
     );
   });
 
-  const doc = new Document({
+  return children;
+}
+
+function makeDocumentShell(children, logoDataUrl, headerSubtitle) {
+  return new Document({
     sections: [{
+      properties: {},
       children,
       headers: {
         default: new Header({
-          children: [new Paragraph({
-            children: logoHeaderChildren(logoDataUrl, 'Marketing Playbook'),
-          })],
+          children: [new Paragraph({ children: logoHeaderChildren(logoDataUrl, headerSubtitle) })],
         }),
       },
       footers: {
         default: new Footer({
           children: [new Paragraph({
             children: [
-              new TextRun({ text: '© Genea Security — Confidential    ', size: 14, color: GRAY_HEX, font: 'Calibri' }),
+              new TextRun({ text: '(c) Genea Security - Confidential    ', size: 14, color: GRAY_HEX, font: 'Calibri' }),
               new TextRun({ children: [PageNumber.CURRENT], size: 14, color: GRAY_HEX, font: 'Calibri' }),
             ],
             alignment: AlignmentType.CENTER,
@@ -306,6 +294,30 @@ export async function generateMarketingPlaybookDocx(content, logoDataUrl) {
       },
     }],
   });
+}
 
-  return Packer.toBlob(doc);
+// ─── Product Brief Word Doc ──────────────────────────────────────
+
+export async function generateProductBriefDocx(content, logoDataUrl) {
+  return Packer.toBlob(makeDocumentShell(buildBriefChildren(content), logoDataUrl, 'Product Brief'));
+}
+
+// ─── Marketing Playbook Word Doc ─────────────────────────────────
+
+export async function generateMarketingPlaybookDocx(content, logoDataUrl) {
+  return Packer.toBlob(makeDocumentShell(buildPlaybookChildren(content), logoDataUrl, 'Marketing Playbook'));
+}
+
+// ─── Combined Word Doc ───────────────────────────────────────────
+
+export async function generateCombinedDocx(briefContent, playbookContent, logoDataUrl) {
+  if (!briefContent)    return generateMarketingPlaybookDocx(playbookContent, logoDataUrl);
+  if (!playbookContent) return generateProductBriefDocx(briefContent, logoDataUrl);
+
+  const allChildren = [
+    ...buildBriefChildren(briefContent),
+    ...buildPlaybookChildren(playbookContent, true), // pageBreakBefore on first para
+  ];
+
+  return Packer.toBlob(makeDocumentShell(allChildren, logoDataUrl, 'Product Release Brief & Playbook'));
 }

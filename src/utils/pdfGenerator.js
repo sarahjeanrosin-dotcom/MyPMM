@@ -118,8 +118,10 @@ function checkPage(doc, y, needed = 30) {
 
 // ─── Product Brief PDF ───────────────────────────────────────────
 
-export function generateProductBriefPdf(content, logoDataUrl) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+export function generateProductBriefPdf(content, logoDataUrl, opts = {}) {
+  const { existingDoc = null, skipFooters = false } = opts;
+  const doc = existingDoc || new jsPDF({ unit: 'mm', format: 'a4' });
+  if (existingDoc) doc.addPage();
 
   // ── Page 1 header ──
   header(doc, 'Product Brief for Sales', logoDataUrl);
@@ -381,11 +383,12 @@ export function generateProductBriefPdf(content, logoDataUrl) {
     });
   }
 
-  // Footers
-  const total = doc.getNumberOfPages();
-  for (let i = 1; i <= total; i++) {
-    doc.setPage(i);
-    footer(doc, i, total);
+  if (!skipFooters) {
+    const total = doc.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      footer(doc, i, total);
+    }
   }
 
   return doc;
@@ -393,8 +396,10 @@ export function generateProductBriefPdf(content, logoDataUrl) {
 
 // ─── Marketing Playbook PDF ──────────────────────────────────────
 
-export function generateMarketingPlaybookPdf(content, logoDataUrl) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+export function generateMarketingPlaybookPdf(content, logoDataUrl, opts = {}) {
+  const { existingDoc = null, skipFooters = false } = opts;
+  const doc = existingDoc || new jsPDF({ unit: 'mm', format: 'a4' });
+  if (existingDoc) doc.addPage();
 
   // ── Title page ──
   doc.setFillColor(...NAVY);
@@ -572,11 +577,34 @@ export function generateMarketingPlaybookPdf(content, logoDataUrl) {
     doc.text(audLines, MARGIN + 5, y + 6);
   });
 
-  // Footers (skip title page)
+  if (!skipFooters) {
+    const total = doc.getNumberOfPages();
+    for (let i = 2; i <= total; i++) {
+      doc.setPage(i);
+      footer(doc, i - 1, total - 1);
+    }
+  }
+
+  return doc;
+}
+
+// ─── Combined PDF ────────────────────────────────────────────────
+
+export function generateCombinedPdf(briefContent, playbookContent, logoDataUrl) {
+  if (!briefContent)   return generateMarketingPlaybookPdf(playbookContent, logoDataUrl);
+  if (!playbookContent) return generateProductBriefPdf(briefContent, logoDataUrl);
+
+  // Generate brief pages (no footers yet)
+  const doc = generateProductBriefPdf(briefContent, logoDataUrl, { skipFooters: true });
+
+  // Append playbook pages into the same doc
+  generateMarketingPlaybookPdf(playbookContent, logoDataUrl, { existingDoc: doc, skipFooters: true });
+
+  // Stamp sequential footers across all pages
   const total = doc.getNumberOfPages();
-  for (let i = 2; i <= total; i++) {
+  for (let i = 1; i <= total; i++) {
     doc.setPage(i);
-    footer(doc, i - 1, total - 1);
+    footer(doc, i, total);
   }
 
   return doc;
