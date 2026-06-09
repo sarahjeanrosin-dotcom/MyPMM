@@ -78,12 +78,22 @@ export function generateMarketingPlaybookContent(release) {
       audienceNotes: 'Mix of existing customers (retention/expansion) and prospects evaluating Genea.',
     },
     Email: {
-      subject: `Introducing ${release.productName}`,
-      preheader: `${release.endUserWhy || 'Now available for your team.'}`,
-      body: `Hi [First Name],\n\nWe're excited to announce ${release.productName} is now available.\n\n${release.productInformation}\n\nKey benefits:\n- Seamless experience for your team\n- Enterprise-grade security\n- Easy deployment\n\nThis is available to all customers on [DATE]. Your Customer Success Manager will be in touch with next steps.\n\nQuestions? Reply to this email or visit our Help Center.\n\nBest,\nThe Genea Team`,
-      cta1: '[SCHEDULE A DEMO - INSERT LINK]',
-      cta2: '[LEARN MORE - INSERT LINK]',
-      verticalEmails: [],
+      endUser: {
+        subject: `Introducing ${release.productName}`,
+        preheader: release.endUserWhy || 'Now available for your team.',
+        body: `Hi [First Name],\n\nWe're excited to share that ${release.productName} is now available.\n\n${release.productInformation}\n\nThis means your team can now [KEY BENEFIT]. Available to all customers effective [DATE].\n\nYour Customer Success Manager will be in touch with next steps. Questions? Reply to this email.\n\nBest,\nThe Genea Team`,
+        cta1: '[SCHEDULE A DEMO - INSERT LINK]',
+        cta2: '[LEARN MORE - INSERT LINK]',
+        verticalEmails: [],
+      },
+      channelPartner: {
+        subject: `New: ${release.productName} — Partner Briefing`,
+        preheader: 'New feature your clients need to know about.',
+        body: `Hi [Partner Name],\n\nWe're launching ${release.productName} and wanted to brief you first.\n\n${release.productInformation}\n\nFor your clients, this means [CUSTOMER VALUE]. As a Genea partner, you have early access to deployment resources, technical documentation, and sales enablement materials.\n\nSchedule a partner briefing to get up to speed before we announce broadly.\n\nBest,\nThe Genea Partner Team`,
+        cta1: '[SCHEDULE A PARTNER BRIEFING - INSERT LINK]',
+        cta2: '[ACCESS PARTNER RESOURCES - INSERT LINK]',
+        verticalEmails: [],
+      },
     },
   };
 

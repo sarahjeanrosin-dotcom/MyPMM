@@ -234,7 +234,78 @@ function buildPlaybookChildren(content, isAppended = false) {
     );
   }
 
-  // Email channel first
+  // Helper to build Word paragraphs for one email audience
+  function buildEmailAudienceChildren(audienceLabel, emailData, accentColor) {
+    if (!emailData) return [];
+    const result = [
+      new Paragraph({
+        children: [new TextRun({ text: audienceLabel.toUpperCase(), bold: true, size: 20, color: 'FFFFFF', font: 'Calibri' })],
+        shading: { type: ShadingType.SOLID, color: accentColor, fill: accentColor },
+        spacing: { before: 240, after: 80 },
+        indent: { left: 80 },
+      }),
+      heading3('Subject Line'),
+      new Paragraph({
+        children: [new TextRun({ text: emailData.subject || '', bold: true, size: 20, color: NAVY_HEX, font: 'Calibri' })],
+        spacing: { before: 0, after: 60 },
+      }),
+      ...(emailData.preheader ? [new Paragraph({
+        children: [new TextRun({ text: `Preview: ${emailData.preheader}`, size: 16, color: GRAY_HEX, italics: true, font: 'Calibri' })],
+        spacing: { before: 0, after: 100 },
+      })] : []),
+      heading3('Email Body'),
+      new Paragraph({
+        children: [new TextRun({ text: emailData.body || '', size: 18, color: '1E293B', font: 'Calibri' })],
+        shading: { type: ShadingType.SOLID, color: 'F1F5F9', fill: 'F1F5F9' },
+        spacing: { before: 60, after: 100 },
+        indent: { left: 80, right: 80 },
+      }),
+      heading3('Calls to Action'),
+      ...[emailData.cta1, emailData.cta2].filter(Boolean).map(cta =>
+        new Paragraph({
+          children: [new TextRun({ text: cta, bold: true, size: 17, color: BLUE_HEX, font: 'Calibri' })],
+          spacing: { before: 40, after: 40 },
+        })
+      ),
+    ];
+
+    const vertEmails = emailData.verticalEmails || [];
+    if (vertEmails.length > 0) {
+      result.push(
+        heading3('Verticalized Emails'),
+        ...vertEmails.flatMap(({ vertical, subject, body: vbody, cta2 }) => [
+          new Paragraph({
+            children: [new TextRun({ text: vertical || '', bold: true, size: 18, color: 'FFFFFF', font: 'Calibri' })],
+            shading: { type: ShadingType.SOLID, color: BRIGHT_HEX, fill: BRIGHT_HEX },
+            spacing: { before: 140, after: 40 },
+            indent: { left: 60 },
+          }),
+          ...(subject ? [new Paragraph({
+            children: [
+              new TextRun({ text: 'Subject: ', bold: true, size: 17, color: NAVY_HEX, font: 'Calibri' }),
+              new TextRun({ text: subject, size: 17, color: '1E293B', font: 'Calibri' }),
+            ],
+            spacing: { before: 0, after: 40 },
+          })] : []),
+          ...(vbody ? [new Paragraph({
+            children: [new TextRun({ text: vbody, size: 17, color: '1E293B', font: 'Calibri' })],
+            shading: { type: ShadingType.SOLID, color: 'E3F2FD', fill: 'E3F2FD' },
+            spacing: { before: 40, after: 40 },
+            indent: { left: 60, right: 60 },
+          })] : []),
+          ...(cta2 ? [new Paragraph({
+            children: [new TextRun({ text: cta2, bold: true, size: 16, color: BLUE_HEX, font: 'Calibri' })],
+            spacing: { before: 40, after: 40 },
+          })] : []),
+        ]),
+      );
+    }
+
+    result.push(divider());
+    return result;
+  }
+
+  // Email channel first — two sections
   const emailCh = content.channels?.Email;
   if (emailCh) {
     children.push(
@@ -244,58 +315,8 @@ function buildPlaybookChildren(content, isAppended = false) {
         spacing: { before: 320, after: 100 },
         indent: { left: 80 },
       }),
-      heading3('Subject Line'),
-      new Paragraph({
-        children: [new TextRun({ text: emailCh.subject || '', bold: true, size: 22, color: NAVY_HEX, font: 'Calibri' })],
-        spacing: { before: 0, after: 80 },
-      }),
-      ...(emailCh.preheader ? [new Paragraph({
-        children: [new TextRun({ text: `Preview: ${emailCh.preheader}`, size: 16, color: GRAY_HEX, italics: true, font: 'Calibri' })],
-        spacing: { before: 0, after: 120 },
-      })] : []),
-      heading3('Email Body'),
-      new Paragraph({
-        children: [new TextRun({ text: emailCh.body || '', size: 18, color: '1E293B', font: 'Calibri' })],
-        shading: { type: ShadingType.SOLID, color: 'F1F5F9', fill: 'F1F5F9' },
-        spacing: { before: 60, after: 120 },
-        indent: { left: 80, right: 80 },
-      }),
-      heading3('Calls to Action'),
-      ...[emailCh.cta1, emailCh.cta2].filter(Boolean).map(cta =>
-        new Paragraph({
-          children: [new TextRun({ text: cta, bold: true, size: 17, color: BLUE_HEX, font: 'Calibri' })],
-          spacing: { before: 40, after: 40 },
-        })
-      ),
-      ...((emailCh.verticalEmails || []).length > 0 ? [
-        heading3('Verticalized Emails'),
-        ...(emailCh.verticalEmails || []).flatMap(({ vertical, subject, body: vbody, cta2 }) => [
-          new Paragraph({
-            children: [new TextRun({ text: vertical || '', bold: true, size: 18, color: 'FFFFFF', font: 'Calibri' })],
-            shading: { type: ShadingType.SOLID, color: BRIGHT_HEX, fill: BRIGHT_HEX },
-            spacing: { before: 160, after: 60 },
-            indent: { left: 60 },
-          }),
-          ...(subject ? [new Paragraph({
-            children: [
-              new TextRun({ text: 'Subject: ', bold: true, size: 17, color: NAVY_HEX, font: 'Calibri' }),
-              new TextRun({ text: subject, size: 17, color: '1E293B', font: 'Calibri' }),
-            ],
-            spacing: { before: 0, after: 60 },
-          })] : []),
-          ...(vbody ? [new Paragraph({
-            children: [new TextRun({ text: vbody, size: 17, color: '1E293B', font: 'Calibri' })],
-            shading: { type: ShadingType.SOLID, color: 'E3F2FD', fill: 'E3F2FD' },
-            spacing: { before: 40, after: 60 },
-            indent: { left: 60, right: 60 },
-          })] : []),
-          ...(cta2 ? [new Paragraph({
-            children: [new TextRun({ text: cta2, bold: true, size: 16, color: BLUE_HEX, font: 'Calibri' })],
-            spacing: { before: 40, after: 40 },
-          })] : []),
-        ]),
-      ] : []),
-      divider(),
+      ...buildEmailAudienceChildren('End Users', emailCh.endUser || emailCh, NAVY_HEX),
+      ...buildEmailAudienceChildren('Channel Partners & Integrators', emailCh.channelPartner, BLUE_HEX),
     );
   }
 

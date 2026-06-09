@@ -182,109 +182,136 @@ function ChannelCard({ channelName, channelData, onChannelChange }) {
   );
 }
 
-function EmailChannelCard({ data, onUpdate }) {
+function EmailAudienceSection({ audience, data, onUpdate, accentColor }) {
   function update(field, value) { onUpdate({ ...data, [field]: value }); }
+  const borderColor = accentColor === 'navy' ? 'border-genea-navy' : 'border-genea-blue';
+
+  return (
+    <div className="space-y-3">
+      {/* Subject */}
+      <div>
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Subject Line</p>
+        <div className="bg-genea-light rounded-lg px-4 py-3 border border-genea-bright/25">
+          <p className="font-bold text-base text-genea-navy">
+            <EditableField value={data?.subject} onChange={v => update('subject', v)} placeholder="Email subject..." />
+          </p>
+        </div>
+      </div>
+
+      {/* Preheader */}
+      <div>
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Preview Text</p>
+        <div className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+          <p className="text-sm text-gray-500 italic">
+            <EditableField value={data?.preheader} onChange={v => update('preheader', v)} placeholder="Preview text..." />
+          </p>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div>
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Email Body</p>
+        <div className={`bg-gray-50 rounded-lg border-l-4 ${borderColor} px-4 py-3`}>
+          <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+            <EditableField value={data?.body} onChange={v => update('body', v)} multiline placeholder="Email body..." />
+          </div>
+        </div>
+      </div>
+
+      {/* CTAs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {[['cta1', 'Primary CTA'], ['cta2', 'Secondary CTA']].map(([field, label]) =>
+          data?.[field] ? (
+            <div key={field}>
+              <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">{label}</p>
+              <div className="bg-genea-navy/5 rounded-lg px-4 py-2.5 border border-genea-navy/10">
+                <p className="text-xs font-mono text-genea-blue font-semibold">
+                  <EditableField value={data[field]} onChange={v => update(field, v)} placeholder="[CTA - LINK]" />
+                </p>
+              </div>
+            </div>
+          ) : null
+        )}
+      </div>
+
+      {/* Vertical emails */}
+      {data?.verticalEmails?.length > 0 && (
+        <div>
+          <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-2">Verticalized Emails</p>
+          <div className="space-y-2">
+            {data.verticalEmails.map(({ vertical, subject, body, cta2 }, i) => (
+              <details key={vertical || i} className="border border-genea-bright/30 rounded-xl bg-genea-light/50 overflow-hidden">
+                <summary className="px-4 py-2.5 cursor-pointer font-semibold text-sm text-genea-navy flex items-center justify-between list-none">
+                  {vertical}
+                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </summary>
+                <div className="px-4 pb-4 pt-2 space-y-2 border-t border-genea-bright/20">
+                  {subject && <div><p className="text-xs font-semibold text-gray-400 mb-0.5">Subject</p><p className="text-sm font-medium text-genea-navy">{subject}</p></div>}
+                  {body && <div><p className="text-xs font-semibold text-gray-400 mb-0.5">Body</p><p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{body}</p></div>}
+                  {cta2 && <div className="bg-white rounded-lg px-3 py-2 border border-genea-bright/20"><p className="text-xs font-mono text-genea-blue font-semibold">{cta2}</p></div>}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmailChannelCard({ data, onUpdate }) {
+  const [tab, setTab] = useState('endUser');
+
+  function updateAudience(audience, audienceData) {
+    onUpdate({ ...data, [audience]: audienceData });
+  }
+
+  const tabs = [
+    { id: 'endUser',       label: 'End Users',          accent: 'navy' },
+    { id: 'channelPartner', label: 'Channel Partners',   accent: 'blue' },
+  ];
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-      <div className="bg-genea-navy px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center text-white">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-          </div>
-          <h3 className="text-white font-bold text-lg">Email Copy</h3>
+      {/* Card header */}
+      <div className="bg-genea-navy px-6 py-4 flex items-center gap-3">
+        <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center text-white">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
         </div>
-        <span className="text-white/70 text-xs font-medium uppercase tracking-wider">General + Vertical</span>
+        <h3 className="text-white font-bold text-lg">Email Copy</h3>
+        <span className="text-white/60 text-xs ml-auto">General + Vertical</span>
       </div>
 
-      <div className="p-6 space-y-4">
-        {/* Subject */}
-        <div>
-          <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Subject Line</p>
-          <div className="bg-genea-light rounded-lg px-4 py-3 border border-genea-bright/25">
-            <p className="font-bold text-base text-genea-navy">
-              <EditableField value={data.subject} onChange={v => update('subject', v)} placeholder="Email subject..." />
-            </p>
-          </div>
-        </div>
+      {/* Audience tabs */}
+      <div className="flex border-b border-gray-200">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
+              tab === t.id ? 'border-genea-navy text-genea-navy' : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Preheader */}
-        {data.preheader && (
-          <div>
-            <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Preheader / Preview Text</p>
-            <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-              <p className="text-sm text-gray-600 italic">
-                <EditableField value={data.preheader} onChange={v => update('preheader', v)} placeholder="Preview text..." />
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Body */}
-        <div>
-          <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">Email Body</p>
-          <div className="bg-gray-50 rounded-lg border-l-4 border-genea-navy px-4 py-3">
-            <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-              <EditableField value={data.body} onChange={v => update('body', v)} multiline placeholder="Email body..." />
-            </div>
-          </div>
-        </div>
-
-        {/* CTAs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[['cta1', 'CTA 1 — Demo'], ['cta2', 'CTA 2 — Learn More']].map(([field, label]) => (
-            data[field] && (
-              <div key={field}>
-                <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1.5">{label}</p>
-                <div className="bg-genea-navy/5 rounded-lg px-4 py-2.5 border border-genea-navy/10">
-                  <p className="text-sm font-mono text-genea-blue font-semibold">
-                    <EditableField value={data[field]} onChange={v => update(field, v)} placeholder="[CTA - LINK]" />
-                  </p>
-                </div>
-              </div>
-            )
-          ))}
-        </div>
-
-        {/* Vertical emails */}
-        {data.verticalEmails?.length > 0 && (
-          <div>
-            <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-2">Verticalized Emails</p>
-            <div className="space-y-3">
-              {data.verticalEmails.map(({ vertical, subject, body, cta2 }, i) => (
-                <details key={vertical || i} className="border border-genea-bright/30 rounded-xl bg-genea-light/50 overflow-hidden">
-                  <summary className="px-4 py-2.5 cursor-pointer font-semibold text-sm text-genea-navy flex items-center justify-between list-none">
-                    {vertical}
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
-                    </svg>
-                  </summary>
-                  <div className="px-4 pb-4 pt-2 space-y-2.5 border-t border-genea-bright/20">
-                    {subject && (
-                      <div>
-                        <p className="text-xs font-semibold text-gray-500 mb-1">Subject</p>
-                        <p className="text-sm font-medium text-genea-navy">{subject}</p>
-                      </div>
-                    )}
-                    {body && (
-                      <div>
-                        <p className="text-xs font-semibold text-gray-500 mb-1">Body</p>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{body}</p>
-                      </div>
-                    )}
-                    {cta2 && (
-                      <div className="bg-white rounded-lg px-3 py-2 border border-genea-bright/20">
-                        <p className="text-xs font-mono text-genea-blue font-semibold">{cta2}</p>
-                      </div>
-                    )}
-                  </div>
-                </details>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="p-6">
+        {tabs.map(t => tab === t.id && (
+          <EmailAudienceSection
+            key={t.id}
+            audience={t.id}
+            data={data?.[t.id]}
+            onUpdate={d => updateAudience(t.id, d)}
+            accentColor={t.accent}
+          />
+        ))}
       </div>
     </div>
   );

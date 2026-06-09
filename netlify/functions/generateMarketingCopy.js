@@ -47,35 +47,46 @@ export default async function handler(req, context) {
 
   const verticals = (targetVerticals || []);
 
-  // Vertical angles for social channels
+  // Vertical angles for social channels — 1 sentence each
   const verticalAnglesSnippet = verticals.length
-    ? `,\n    "verticalAngles": [${verticals.map(v => `{"vertical": "${v}", "angle": "1 sentence for ${v} audience. Plain ASCII."}`).join(', ')}]`
+    ? `,\n    "verticalAngles": [${verticals.map(v => `{"vertical": "${v}", "angle": "WRITE a 1-sentence angle for the ${v} audience. Plain ASCII."}`).join(', ')}]`
     : '';
 
-  // Vertical emails for Email channel
-  const verticalEmailsSnippet = verticals.length
-    ? `,\n    "verticalEmails": [${verticals.map(v => `{"vertical": "${v}", "subject": "Subject for ${v}", "body": "150-200 word email tailored to ${v} pain points. Plain ASCII.", "cta2": "[LEARN MORE - ${v.toUpperCase().replace(/[^A-Z0-9]/g, '_')} KBA LINK]"}`).join(', ')}]`
-    : '';
+  // Helper: vertical emails block — explicit write instructions, literal CTAs
+  const makeVerticalEmailsSnippet = (audienceLabel, ctaBase) => !verticals.length ? '' :
+    `,\n      "verticalEmails": [${verticals.map(v => {
+      const kbaKey = v.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+      return `{"vertical": "${v}", "subject": "WRITE a subject line for ${audienceLabel} in the ${v} sector, under 10 words", "body": "WRITE 100-150 words for ${audienceLabel} in the ${v} sector, highlighting ${v}-specific pain points this feature solves. Plain ASCII only.", "cta2": "[${ctaBase} - ${kbaKey} KBA LINK]"}`;
+    }).join(', ')}]`;
 
   // Build the JSON schema only for the relevant channels
   const socialSchema = (name, copySpec) => `  "${name}": {
-    "headline": ${copySpec.headline},
-    "copy": ${copySpec.copy},
-    "cta": "Call-to-action. Plain ASCII only.",
-    "visualDirection": "1-2 sentences on ideal visual direction.",
-    "audienceNotes": "1-2 sentences on target audience and positioning."${verticalAnglesSnippet}
+    "headline": WRITE ${copySpec.headline},
+    "copy": WRITE ${copySpec.copy},
+    "cta": WRITE a call-to-action phrase. Plain ASCII only.,
+    "visualDirection": WRITE 1-2 sentences on ideal visual direction.,
+    "audienceNotes": WRITE 1-2 sentences on target audience and positioning.${verticalAnglesSnippet}
   }`;
 
   const channelSchemas = {
-    LinkedIn:  socialSchema('LinkedIn',  { headline: '"Punchy professional headline, under 15 words"', copy: '"Complete LinkedIn post, 150-250 words. Lead with value, end with CTA. Plain ASCII only."' }),
-    Instagram: socialSchema('Instagram', { headline: '"Short punchy hook, under 10 words"', copy: '"Complete Instagram caption, 80-150 words. Punchy, benefit-led. End with hashtags. Plain ASCII only."' }),
-    YouTube:   socialSchema('YouTube',   { headline: '"Searchable video title, under 70 chars"', copy: '"Video description with topics + subscribe CTA. 100-200 words. Plain ASCII only."' }),
+    LinkedIn:  socialSchema('LinkedIn',  { headline: 'a punchy professional headline, under 15 words', copy: 'a complete LinkedIn post, 150-250 words. Lead with value, end with CTA. Plain ASCII.' }),
+    Instagram: socialSchema('Instagram', { headline: 'a short punchy hook, under 10 words', copy: 'a complete Instagram caption, 80-150 words. Punchy, benefit-led. End with hashtags. Plain ASCII.' }),
+    YouTube:   socialSchema('YouTube',   { headline: 'a searchable video title, under 70 chars', copy: 'a video description with topics covered + subscribe CTA. 100-200 words. Plain ASCII.' }),
     Email: `  "Email": {
-    "subject": "Email subject line, 6-10 words. Plain ASCII.",
-    "preheader": "Preview text, under 12 words.",
-    "body": "Complete email body, 200-300 words. Professional, benefit-led, clear sections. Plain ASCII only.",
-    "cta1": "[SCHEDULE A DEMO - INSERT LINK]",
-    "cta2": "[LEARN MORE - INSERT LINK]"${verticalEmailsSnippet}
+    "endUser": {
+      "subject": WRITE an email subject for end users, under 10 words. Plain ASCII.,
+      "preheader": WRITE preview text for end users, under 12 words.,
+      "body": WRITE a 200-300 word email body for end users. Professional, benefit-led, written to employees or facility managers who will use this feature daily. Plain ASCII only.,
+      "cta1": "[SCHEDULE A DEMO - INSERT LINK]",
+      "cta2": "[LEARN MORE - INSERT LINK]"${makeVerticalEmailsSnippet('end users', 'LEARN MORE')}
+    },
+    "channelPartner": {
+      "subject": WRITE an email subject for integrators and channel partners, under 10 words. Plain ASCII.,
+      "preheader": WRITE preview text for partners, under 12 words.,
+      "body": WRITE a 200-300 word email body for integrators and channel partners. Technical, enablement-focused, written to help them sell and deploy this feature for their clients. Plain ASCII only.,
+      "cta1": "[SCHEDULE A PARTNER BRIEFING - INSERT LINK]",
+      "cta2": "[ACCESS PARTNER RESOURCES - INSERT LINK]"${makeVerticalEmailsSnippet('integrators serving', 'PARTNER RESOURCES')}
+    }
   }`,
   };
 
