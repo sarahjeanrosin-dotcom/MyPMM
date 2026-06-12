@@ -669,6 +669,60 @@ export function generateMarketingPlaybookPdf(content, logoDataUrl, opts = {}) {
     return y;
   }
 
+  // ── In-App Messaging ────────────────────────────────────────────
+  if (channels.InApp) {
+    const ia = channels.InApp;
+    doc.addPage();
+    header(doc, 'Marketing Playbook -- In-App Messaging', logoDataUrl);
+    let y = 26;
+
+    const renderInAppBlock = (title, block, accentColor) => {
+      if (!block) return;
+      y = checkPage(doc, y, 40);
+      if (y === 28) header(doc, 'Marketing Playbook -- In-App Messaging', logoDataUrl);
+
+      // Block heading bar
+      doc.setFillColor(...accentColor);
+      doc.roundedRect(MARGIN, y, CONTENT, 8, 1, 1, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...WHITE);
+      doc.text(title.toUpperCase(), MARGIN + 5, y + 5.5);
+      y += 11;
+
+      // Headline
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(...NAVY);
+      const hLines = doc.splitTextToSize(sanitize(block.headline || ''), CONTENT);
+      doc.text(hLines, MARGIN, y);
+      y += hLines.length * 6 + 4;
+
+      // Body
+      const bLines = doc.splitTextToSize(sanitize(block.body || ''), CONTENT);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...DARK);
+      doc.text(bLines, MARGIN, y);
+      y += bLines.length * 5 + 5;
+
+      // CTA button mock
+      if (block.cta) {
+        doc.setFillColor(...accentColor);
+        const ctaW = Math.min(doc.getTextWidth(sanitize(block.cta)) + 12, 60);
+        doc.roundedRect(MARGIN, y, ctaW, 8, 1, 1, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...WHITE);
+        doc.text(sanitize(block.cta), MARGIN + ctaW / 2, y + 5.3, { align: 'center' });
+        y += 14;
+      }
+    };
+
+    renderInAppBlock('Announcement Banner', ia.banner, BRIGHT);
+    renderInAppBlock("What's New Modal",    ia.modal,  BLUE);
+  }
+
   // Email channel rendered separately — two pages (end users + channel partners)
   if (channels.Email) {
     const em = channels.Email;

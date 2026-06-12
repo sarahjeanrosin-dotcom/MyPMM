@@ -305,6 +305,51 @@ function buildPlaybookChildren(content, isAppended = false) {
     return result;
   }
 
+  // In-App Messaging
+  const inappCh = content.channels?.InApp;
+  if (inappCh) {
+    const renderInAppBlock = (label, block, accentHex) => {
+      if (!block) return [];
+      return [
+        new Paragraph({
+          children: [new TextRun({ text: label.toUpperCase(), bold: true, size: 20, color: 'FFFFFF', font: 'Calibri' })],
+          shading: { type: ShadingType.SOLID, color: accentHex, fill: accentHex },
+          spacing: { before: 200, after: 80 },
+          indent: { left: 80 },
+        }),
+        heading3('Headline'),
+        new Paragraph({
+          children: [new TextRun({ text: block.headline || '', bold: true, size: 22, color: NAVY_HEX, font: 'Calibri' })],
+          spacing: { before: 0, after: 80 },
+        }),
+        heading3('Body'),
+        new Paragraph({
+          children: [new TextRun({ text: block.body || '', size: 18, color: '1E293B', font: 'Calibri' })],
+          shading: { type: ShadingType.SOLID, color: 'F1F5F9', fill: 'F1F5F9' },
+          spacing: { before: 40, after: 100 },
+          indent: { left: 80, right: 80 },
+        }),
+        heading3('CTA Button'),
+        new Paragraph({
+          children: [new TextRun({ text: `[ ${block.cta || 'Learn More'} ]`, bold: true, size: 18, color: accentHex, font: 'Calibri' })],
+          spacing: { before: 0, after: 120 },
+        }),
+      ];
+    };
+
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'IN-APP MESSAGING', bold: true, size: 24, color: 'FFFFFF', font: 'Calibri' })],
+        shading: { type: ShadingType.SOLID, color: NAVY_HEX, fill: NAVY_HEX },
+        spacing: { before: 320, after: 100 },
+        indent: { left: 80 },
+      }),
+      ...renderInAppBlock('Announcement Banner', inappCh.banner, BRIGHT_HEX),
+      ...renderInAppBlock("What's New Modal",    inappCh.modal,  BLUE_HEX),
+      divider(),
+    );
+  }
+
   // Email channel first — two sections
   const emailCh = content.channels?.Email;
   if (emailCh) {

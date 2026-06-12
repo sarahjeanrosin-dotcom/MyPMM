@@ -4,6 +4,7 @@ const GROUPS = [
   { key: 'document', label: 'Document' },
   { key: 'social',   label: 'Social Channels' },
   { key: 'email',    label: 'Email' },
+  { key: 'inapp',    label: 'In-App' },
 ];
 
 export default function CollateralSelector({ selected = [], tierLevel, onChange }) {

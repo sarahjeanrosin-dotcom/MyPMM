@@ -5,21 +5,21 @@ export const tierConfig = {
     label: 'Tier 1 — Platform-Wide / Critical',
     description: 'Full global campaign + training. All channels, press, and customer comms.',
     commsLevel: 'full',
-    collateralDefaults: ['brief', 'linkedin', 'instagram', 'youtube', 'email'],
+    collateralDefaults: ['brief', 'linkedin', 'instagram', 'youtube', 'email', 'inapp'],
     channelGuidance: 'Full campaign across all channels. Bold, pioneering language. Broad awareness.',
   },
   'Tier 2': {
     label: 'Tier 2 — Major Feature',
     description: 'ICP-targeted enablement + announcements to strategic accounts.',
     commsLevel: 'targeted',
-    collateralDefaults: ['brief', 'linkedin', 'youtube', 'email'],
+    collateralDefaults: ['brief', 'linkedin', 'youtube', 'email', 'inapp'],
     channelGuidance: 'Professional, value-focused messaging. Target enterprise IT and security decision-makers.',
   },
   'Tier 3': {
     label: 'Tier 3 — Enhancement / Hardware-Specific',
     description: 'Help Center update + release notes. Limited professional social.',
     commsLevel: 'minimal',
-    collateralDefaults: ['brief', 'linkedin'],
+    collateralDefaults: ['brief', 'linkedin', 'inapp'],
     channelGuidance: 'Informational LinkedIn post for the niche audience on this hardware or integration path.',
   },
   'Tier 4': {
@@ -37,12 +37,14 @@ export const COLLATERAL_CHANNEL_MAP = {
   instagram: 'Instagram',
   youtube:   'YouTube',
   email:     'Email',
+  inapp:     'InApp',
 };
 
 export const COLLATERAL_ITEMS = [
-  { key: 'brief',     group: 'document', label: 'Product Brief',    desc: 'For Sales & CS enablement' },
-  { key: 'linkedin',  group: 'social',   label: 'LinkedIn Post',     desc: 'Professional B2B copy' },
-  { key: 'instagram', group: 'social',   label: 'Instagram Post',    desc: 'Visual, benefit-led copy' },
-  { key: 'youtube',   group: 'social',   label: 'YouTube Script',    desc: 'Video description + CTA' },
-  { key: 'email',     group: 'email',    label: 'Email Copy',        desc: 'General + verticalized with KBA links' },
+  { key: 'brief',     group: 'document', label: 'Product Brief',      desc: 'For Sales & CS enablement' },
+  { key: 'linkedin',  group: 'social',   label: 'LinkedIn Post',       desc: 'Professional B2B copy' },
+  { key: 'instagram', group: 'social',   label: 'Instagram Post',      desc: 'Visual, benefit-led copy' },
+  { key: 'youtube',   group: 'social',   label: 'YouTube Script',      desc: 'Video description + CTA' },
+  { key: 'email',     group: 'email',    label: 'Email Copy',          desc: 'General + verticalized with KBA links' },
+  { key: 'inapp',     group: 'inapp',    label: 'In-App Messaging',    desc: 'Banner + What\'s New modal for end users' },
 ];

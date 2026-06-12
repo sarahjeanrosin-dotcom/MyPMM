@@ -77,6 +77,18 @@ export function generateMarketingPlaybookContent(release) {
       visualDirection: '16:9 product demo video. Screen recording with voiceover. Open on Genea branded intro card. Close with CTA card.',
       audienceNotes: 'Mix of existing customers (retention/expansion) and prospects evaluating Genea.',
     },
+    InApp: {
+      banner: {
+        headline: `New: ${release.productName}`,
+        body: `${release.endUserWhy || 'A new way to access your building is here.'} Available now.`,
+        cta: 'Learn More',
+      },
+      modal: {
+        headline: `Introducing ${release.productName}`,
+        body: `${release.productName} is now available. ${release.endUserWhy || 'This update makes accessing your building easier than ever.'} Tap below to learn more or update your app to get started.`,
+        cta: "See What's New",
+      },
+    },
     Email: {
       endUser: {
         subject: `Introducing ${release.productName}`,

@@ -182,6 +182,76 @@ function ChannelCard({ channelName, channelData, onChannelChange }) {
   );
 }
 
+function InAppMessageBlock({ label, icon, data, onUpdate, accentBg }) {
+  function update(field, value) { onUpdate({ ...data, [field]: value }); }
+  return (
+    <div className={`rounded-xl border border-gray-200 overflow-hidden`}>
+      <div className={`${accentBg} px-4 py-2 flex items-center gap-2`}>
+        <span className="text-white">{icon}</span>
+        <p className="text-white text-xs font-bold uppercase tracking-widest">{label}</p>
+      </div>
+      <div className="p-4 bg-gray-50 space-y-3">
+        <div>
+          <p className="text-xs text-gray-500 font-semibold mb-1">Headline</p>
+          <div className="bg-white rounded-lg px-3 py-2 border border-gray-200">
+            <p className="font-bold text-sm text-genea-navy">
+              <EditableField value={data?.headline} onChange={v => update('headline', v)} placeholder="Headline..." />
+            </p>
+          </div>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500 font-semibold mb-1">Body</p>
+          <div className="bg-white rounded-lg px-3 py-2 border border-gray-200">
+            <p className="text-sm text-gray-700 leading-snug">
+              <EditableField value={data?.body} onChange={v => update('body', v)} multiline placeholder="Body copy..." />
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 font-semibold">CTA button:</span>
+          <div className="bg-genea-bright text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+            <EditableField value={data?.cta} onChange={v => update('cta', v)} placeholder="Learn More" className="text-white font-bold" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InAppChannelCard({ data, onUpdate }) {
+  function updateSection(section, sectionData) { onUpdate({ ...data, [section]: sectionData }); }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+      <div className="bg-genea-navy px-6 py-4 flex items-center gap-3">
+        <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center text-white">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+        </div>
+        <h3 className="text-white font-bold text-lg">In-App Messaging</h3>
+        <span className="text-white/60 text-xs ml-auto">End Users</span>
+      </div>
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <InAppMessageBlock
+          label="Announcement Banner"
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>}
+          data={data?.banner}
+          onUpdate={d => updateSection('banner', d)}
+          accentBg="bg-genea-bright"
+        />
+        <InAppMessageBlock
+          label="What's New Modal"
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>}
+          data={data?.modal}
+          onUpdate={d => updateSection('modal', d)}
+          accentBg="bg-genea-blue"
+        />
+      </div>
+    </div>
+  );
+}
+
 function EmailAudienceSection({ audience, data, onUpdate, accentColor }) {
   function update(field, value) { onUpdate({ ...data, [field]: value }); }
   const borderColor = accentColor === 'navy' ? 'border-genea-navy' : 'border-genea-blue';
@@ -396,11 +466,11 @@ export default function MarketingPlaybookPreview({ content, onContentChange }) {
         )}
 
         {/* Channel Cards */}
-        {content.channels && Object.entries(content.channels).map(([channelName, channelData]) => (
-          channelName === 'Email'
-            ? <EmailChannelCard key="Email" data={channelData} onUpdate={data => updateChannel('Email', data)} />
-            : <ChannelCard key={channelName} channelName={channelName} channelData={channelData} onChannelChange={data => updateChannel(channelName, data)} />
-        ))}
+        {content.channels && Object.entries(content.channels).map(([channelName, channelData]) => {
+          if (channelName === 'Email')  return <EmailChannelCard key="Email" data={channelData} onUpdate={d => updateChannel('Email', d)} />;
+          if (channelName === 'InApp')  return <InAppChannelCard key="InApp" data={channelData} onUpdate={d => updateChannel('InApp', d)} />;
+          return <ChannelCard key={channelName} channelName={channelName} channelData={channelData} onChannelChange={d => updateChannel(channelName, d)} />;
+        })}
 
         {/* Footer */}
         <div className="border-t border-gray-200 pt-4 mt-2 flex items-center justify-between">

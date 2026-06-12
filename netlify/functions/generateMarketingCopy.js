@@ -72,6 +72,18 @@ export default async function handler(req, context) {
     LinkedIn:  socialSchema('LinkedIn',  { headline: 'a punchy professional headline, under 15 words', copy: 'a complete LinkedIn post, 150-250 words. Lead with value, end with CTA. Plain ASCII.' }),
     Instagram: socialSchema('Instagram', { headline: 'a short punchy hook, under 10 words', copy: 'a complete Instagram caption, 80-150 words. Punchy, benefit-led. End with hashtags. Plain ASCII.' }),
     YouTube:   socialSchema('YouTube',   { headline: 'a searchable video title, under 70 chars', copy: 'a video description with topics covered + subscribe CTA. 100-200 words. Plain ASCII.' }),
+    InApp: `  "InApp": {
+    "banner": {
+      "headline": WRITE a banner headline for end users, under 10 words. Bold and attention-grabbing. Plain ASCII.,
+      "body": WRITE 1-2 short sentences for a product announcement banner. Benefit-led, for the employee using Genea daily. Plain ASCII.,
+      "cta": WRITE a short button label, 2-4 words. E.g. Learn More, Try It Now, See Details.
+    },
+    "modal": {
+      "headline": WRITE a What's New modal headline for end users, under 10 words. Plain ASCII.,
+      "body": WRITE 2-3 sentences for a What's New modal. More context than the banner — explain what changed, why it matters to the end user, and what to do next. Plain ASCII.,
+      "cta": WRITE a short button label, 2-4 words. E.g. Get Started, Try It Now, Learn More.
+    }
+  }`,
     Email: `  "Email": {
     "endUser": {
       "subject": WRITE an email subject for end users, under 10 words. Plain ASCII.,
