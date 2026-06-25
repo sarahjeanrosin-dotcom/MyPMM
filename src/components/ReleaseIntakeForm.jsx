@@ -48,11 +48,15 @@ function DateField({ value, onChange }) {
 }
 
 const STEPS = [
-  { id: 1, label: 'Project Setup', icon: '⚙️' },
-  { id: 2, label: 'Product Info', icon: '📋' },
-  { id: 3, label: 'Roadmap', icon: '🗺️' },
-  { id: 4, label: 'Users & Partners', icon: '👥' },
-  { id: 5, label: 'Resources', icon: '🔗' },
+  { id: 1,  label: 'Project Setup',      icon: '⚙️' },
+  { id: 2,  label: 'Product Info',       icon: '📋' },
+  { id: 3,  label: 'Roadmap',            icon: '🗺️' },
+  { id: 4,  label: 'Users & Partners',   icon: '👥' },
+  { id: 5,  label: 'Resources',          icon: '🔗' },
+  { id: 6,  label: 'ICP & Audience',     icon: '🎯' },
+  { id: 7,  label: 'Positioning',        icon: '💬' },
+  { id: 8,  label: 'Pricing & Market',   icon: '📈' },
+  { id: 9,  label: 'Proof & Timeline',   icon: '✅' },
 ];
 
 function StepIndicator({ currentStep, totalSteps }) {
@@ -493,6 +497,300 @@ function Step5({ release, onChange }) {
   );
 }
 
+// ── TBD toggle helper ────────────────────────────────────────────
+function TbdToggle({ value, onToggle }) {
+  const isTbd = value === 'TBD';
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`text-xs font-semibold px-2 py-0.5 rounded border transition-all ${
+        isTbd
+          ? 'bg-amber-50 text-amber-700 border-amber-300'
+          : 'text-gray-300 border-gray-200 hover:text-genea-navy hover:border-gray-400'
+      }`}
+    >
+      {isTbd ? 'TBD ×' : 'TBD'}
+    </button>
+  );
+}
+
+function DgField({ label, hint, value, onChange, multiline = false, placeholder = '' }) {
+  const isTbd = value === 'TBD';
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="genea-label mb-0">{label}</label>
+        <TbdToggle value={value} onToggle={() => onChange(isTbd ? '' : 'TBD')} />
+      </div>
+      {hint && <p className="text-xs text-gray-400 mb-1.5">{hint}</p>}
+      {isTbd ? (
+        <div className="genea-input bg-amber-50 text-amber-600 text-sm font-semibold">TBD</div>
+      ) : multiline ? (
+        <textarea
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={3}
+          className="genea-input resize-none"
+        />
+      ) : (
+        <input
+          type="text"
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="genea-input"
+        />
+      )}
+    </div>
+  );
+}
+
+// Step 6: ICP & Audience
+function Step6({ release, onChange }) {
+  const SEGMENTS   = ['Security end-user', 'CRE', 'Both', 'TBD'];
+  const CRE_SUBS   = ['Submeter Billing', 'On-Demand HVAC', 'Security + VM', 'TBD', 'N/A'];
+  const GOALS      = ['Pipeline $', 'Awareness', 'Expansion', 'TBD'];
+
+  return (
+    <div className="space-y-5">
+      {/* Launch Snapshot additions */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <FormField label="Segment" required>
+          <select value={release.segment || 'TBD'} onChange={e => onChange({ segment: e.target.value })} className="genea-input">
+            {SEGMENTS.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </FormField>
+        <FormField label="CRE Sub-Motion">
+          <select value={release.creSubMotion || 'N/A'} onChange={e => onChange({ creSubMotion: e.target.value })} className="genea-input">
+            {CRE_SUBS.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Primary Goal" required>
+          <select value={release.primaryGoal || 'TBD'} onChange={e => onChange({ primaryGoal: e.target.value })} className="genea-input">
+            {GOALS.map(g => <option key={g}>{g}</option>)}
+          </select>
+        </FormField>
+      </div>
+
+      <div className="border-t border-gray-100 pt-4 space-y-4">
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest">ICP & Personas</p>
+        <DgField
+          label="Ideal Customer Profile (Firmographic)"
+          hint="Company type, size, vertical, geography. For CRE: Class A office, building SF, REIT vs owner-operator. For Security: multi-site, healthcare, higher ed."
+          value={release.icpFirmographic || ''}
+          onChange={v => onChange({ icpFirmographic: v })}
+          multiline
+          placeholder="e.g. Multi-site enterprise, 500+ employees, healthcare or higher ed verticals, North America..."
+        />
+        <DgField
+          label="Qualifying Triggers / Buying Signals"
+          hint="What makes an account in-market now."
+          value={release.qualifyingTriggers || ''}
+          onChange={v => onChange({ qualifyingTriggers: v })}
+          multiline
+          placeholder="e.g. Lease event, migration off on-prem, expansion, refresh cycle..."
+        />
+        <DgField
+          label="Disqualifiers / Exclusions"
+          hint="Who this is NOT for. Prevents wasted spend."
+          value={release.disqualifiers || ''}
+          onChange={v => onChange({ disqualifiers: v })}
+          multiline
+          placeholder="e.g. Single-site SMB, residential, non-enterprise..."
+        />
+        <DgField
+          label="Primary Persona(s) and Titles"
+          value={release.primaryPersonas || ''}
+          onChange={v => onChange({ primaryPersonas: v })}
+          multiline
+          placeholder="e.g. Director of Physical Security, VP of Real Estate, IT Manager..."
+        />
+        <DgField
+          label="Secondary / Influencer Personas"
+          value={release.secondaryPersonas || ''}
+          onChange={v => onChange({ secondaryPersonas: v })}
+          multiline
+          placeholder="e.g. CIO, Facilities Manager, Building Owner..."
+        />
+        <DgField
+          label="Pains / Jobs-to-be-Done per Persona"
+          value={release.painsJTBD || ''}
+          onChange={v => onChange({ painsJTBD: v })}
+          multiline
+          placeholder="e.g. Security Director: needs centralized visibility across sites without rip-and-replace..."
+        />
+      </div>
+    </div>
+  );
+}
+
+// Step 7: Use Cases & Positioning
+function Step7({ release, onChange }) {
+  function updateUseCase(i, field, val) {
+    const updated = (release.useCases || []).map((uc, idx) => idx === i ? { ...uc, [field]: val } : uc);
+    onChange({ useCases: updated });
+  }
+  function addUseCase() {
+    onChange({ useCases: [...(release.useCases || []), { scenario: '', persona: '', trigger: '' }] });
+  }
+  function removeUseCase(i) {
+    onChange({ useCases: (release.useCases || []).filter((_, idx) => idx !== i) });
+  }
+  function updatePillar(i, field, val) {
+    const pillars = (release.messagingPillars || [{},{},{}]).map((p, idx) => idx === i ? { ...p, [field]: val } : p);
+    onChange({ messagingPillars: pillars });
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Use Cases */}
+      <div>
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-3">Use Cases</p>
+        <div className="space-y-2">
+          {(release.useCases || [{ scenario: '', persona: '', trigger: '' }]).map((uc, i) => (
+            <div key={i} className="grid grid-cols-3 gap-2 items-start">
+              <input value={uc.scenario} onChange={e => updateUseCase(i, 'scenario', e.target.value)} placeholder="Scenario / use case" className="genea-input text-sm" />
+              <input value={uc.persona}  onChange={e => updateUseCase(i, 'persona',  e.target.value)} placeholder="Persona" className="genea-input text-sm" />
+              <div className="flex gap-1">
+                <input value={uc.trigger} onChange={e => updateUseCase(i, 'trigger', e.target.value)} placeholder="Trigger / why now" className="genea-input text-sm flex-1" />
+                {i > 0 && <button type="button" onClick={() => removeUseCase(i)} className="text-red-400 hover:text-red-600 px-1 text-lg leading-none">×</button>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={addUseCase} className="mt-2 text-xs text-genea-bright font-semibold hover:text-genea-blue">+ Add use case</button>
+      </div>
+
+      {/* Positioning */}
+      <div className="border-t border-gray-100 pt-4 space-y-4">
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest">Positioning & Messaging</p>
+        <DgField label="One-line Value Proposition" value={release.valueProposition || ''} onChange={v => onChange({ valueProposition: v })} placeholder="e.g. The only enterprise-grade hands-free access platform with native Apple Watch support." />
+        <div>
+          <p className="genea-label">Messaging Pillars</p>
+          {[0, 1, 2].map(i => (
+            <div key={i} className="grid grid-cols-2 gap-2 mb-2">
+              <input
+                value={release.messagingPillars?.[i]?.pillar || ''}
+                onChange={e => updatePillar(i, 'pillar', e.target.value)}
+                placeholder={`Pillar ${i + 1}`}
+                className="genea-input text-sm"
+              />
+              <input
+                value={release.messagingPillars?.[i]?.proof || ''}
+                onChange={e => updatePillar(i, 'proof', e.target.value)}
+                placeholder="Proof point"
+                className="genea-input text-sm"
+              />
+            </div>
+          ))}
+          <p className="text-xs text-gray-400">Left: pillar statement · Right: supporting proof point</p>
+        </div>
+        <DgField label="One-sentence Differentiation" value={release.differentiation || ''} onChange={v => onChange({ differentiation: v })} placeholder="e.g. Unlike Openpath, Genea delivers hands-free UWB unlock without proprietary hardware lock-in." />
+        <DgField label="Approved Copy Block" hint="Pre-cleared short paragraph demand gen can paste into a newsletter or ad unit." value={release.approvedCopyBlock || ''} onChange={v => onChange({ approvedCopyBlock: v })} multiline placeholder="Drop-in approved paragraph..." />
+        <DgField label="Banned / Off-message Phrasing" value={release.bannedPhrasing || ''} onChange={v => onChange({ bannedPhrasing: v })} placeholder="e.g. Don't mention NFC limitations, avoid 'revolutionary'..." />
+      </div>
+    </div>
+  );
+}
+
+// Step 8: Benefits, Pricing & Market
+function Step8({ release, onChange }) {
+  const POSTURES = ['Premium', 'Parity', 'Value', 'TBD'];
+
+  function updateBenefit(i, field, val) {
+    const updated = (release.keyBenefits || []).map((b, idx) => idx === i ? { ...b, [field]: val } : b);
+    onChange({ keyBenefits: updated });
+  }
+  function addBenefit() {
+    onChange({ keyBenefits: [...(release.keyBenefits || []), { feature: '', outcome: '' }] });
+  }
+  function removeBenefit(i) {
+    onChange({ keyBenefits: (release.keyBenefits || []).filter((_, idx) => idx !== i) });
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Key Benefits */}
+      <div>
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-3">Key Benefits & Features</p>
+        <div className="grid grid-cols-2 gap-2 mb-1">
+          <p className="text-xs text-gray-400 font-semibold">Feature / capability</p>
+          <p className="text-xs text-gray-400 font-semibold">Buyer outcome (the so-what)</p>
+        </div>
+        <div className="space-y-2">
+          {(release.keyBenefits || [{ feature: '', outcome: '' }]).map((b, i) => (
+            <div key={i} className="grid grid-cols-2 gap-2 items-center">
+              <input value={b.feature} onChange={e => updateBenefit(i, 'feature', e.target.value)} placeholder="e.g. UWB hands-free unlock" className="genea-input text-sm" />
+              <div className="flex gap-1">
+                <input value={b.outcome} onChange={e => updateBenefit(i, 'outcome', e.target.value)} placeholder="e.g. Zero friction at every door" className="genea-input text-sm flex-1" />
+                {i > 0 && <button type="button" onClick={() => removeBenefit(i)} className="text-red-400 hover:text-red-600 px-1 text-lg leading-none">×</button>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={addBenefit} className="mt-2 text-xs text-genea-bright font-semibold hover:text-genea-blue">+ Add benefit</button>
+      </div>
+
+      {/* Pricing */}
+      <div className="border-t border-gray-100 pt-4 space-y-4">
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest">Pricing & Packaging</p>
+        <DgField label="Price Points / Tiers" hint="Actual numbers or ranges, and the unit (per door, per building, per user)." value={release.pricingTiers || ''} onChange={v => onChange({ pricingTiers: v })} multiline placeholder="e.g. $X per door/month, enterprise volume pricing available..." />
+        <DgField label="Packaging / Bundle" value={release.packagingBundle || ''} onChange={v => onChange({ packagingBundle: v })} multiline placeholder="e.g. Standalone add-on, included in Enterprise tier..." />
+        <DgField label="Discounting / Deal Guidance" value={release.discountingGuidance || ''} onChange={v => onChange({ discountingGuidance: v })} multiline placeholder="e.g. Standard 15% for multi-year, 20% for 50+ doors..." />
+        <FormField label="Competitive Price Posture">
+          <select value={release.competitivePricePosture || 'TBD'} onChange={e => onChange({ competitivePricePosture: e.target.value })} className="genea-input">
+            {POSTURES.map(p => <option key={p}>{p}</option>)}
+          </select>
+        </FormField>
+      </div>
+
+      {/* Market */}
+      <div className="border-t border-gray-100 pt-4 space-y-4">
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest">Market & Opportunity</p>
+        <DgField label="Market Sizing (TAM / SAM / SOM)" hint="By segment. Size the one this launch targets." value={release.marketSizing || ''} onChange={v => onChange({ marketSizing: v })} multiline placeholder="e.g. TAM: $X B global enterprise access, SAM: $X B US multi-site..." />
+        <DgField label="Best Opportunity / Where to Focus" hint="The highest-yield slice: segment, vertical, account tier, or named ABM list." value={release.bestOpportunity || ''} onChange={v => onChange({ bestOpportunity: v })} multiline placeholder="e.g. Healthcare and higher ed, 500+ employees, migrating off legacy..." />
+        <DgField label="Demand & Intent Signals" hint="G2 buyer intent, search trends, event signals, category momentum." value={release.demandSignals || ''} onChange={v => onChange({ demandSignals: v })} multiline placeholder="e.g. ~25-30 hot accounts/week on G2, rising searches for 'hands-free access'..." />
+        <DgField label="Market Trends / Tailwinds" value={release.marketTrends || ''} onChange={v => onChange({ marketTrends: v })} multiline placeholder="e.g. Cloud migration off on-prem, return-to-office driving access upgrades..." />
+        <DgField label="Analyst / Third-Party Validation" value={release.analystValidation || ''} onChange={v => onChange({ analystValidation: v })} multiline placeholder="e.g. Gartner names access control as fastest-growing physical security category..." />
+      </div>
+    </div>
+  );
+}
+
+// Step 9: Competitive, Proof Points & Timeline
+function Step9({ release, onChange }) {
+  return (
+    <div className="space-y-5">
+      {/* Competitive */}
+      <div>
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-3">Competitive</p>
+        <div className="space-y-4">
+          <DgField label="The Wedge (what we win on)" value={release.competitiveWedge || ''} onChange={v => onChange({ competitiveWedge: v })} placeholder="e.g. Open API, no hardware lock-in, cloud-native architecture..." />
+          <DgField label="Top Objections + Counters" value={release.topObjections || ''} onChange={v => onChange({ topObjections: v })} multiline placeholder="Objection: [x] → Counter: [y]&#10;Objection: [x] → Counter: [y]" />
+        </div>
+      </div>
+
+      {/* Proof Points */}
+      <div className="border-t border-gray-100 pt-4 space-y-4">
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest">Proof Points & Evidence</p>
+        <DgField label="Stats / Benchmarks" value={release.statsAndBenchmarks || ''} onChange={v => onChange({ statsAndBenchmarks: v })} multiline placeholder="e.g. 99.9% uptime, 40% faster credential provisioning vs legacy..." />
+        <DgField label="Customer Names Cleared for Use" value={release.customerNamesCleared || ''} onChange={v => onChange({ customerNamesCleared: v })} placeholder="e.g. Healthpeak Properties, UCLA, Boston Properties..." />
+        <DgField label="ROI / TCO / NOI Figures + Methodology" value={release.roiTcoFigures || ''} onChange={v => onChange({ roiTcoFigures: v })} multiline placeholder="e.g. Average 30% reduction in access-related support tickets..." />
+        <DgField label="Quotes, Case Studies, Analyst Mentions" value={release.quotesAndCaseStudies || ''} onChange={v => onChange({ quotesAndCaseStudies: v })} multiline placeholder="e.g. 'Genea cut our provisioning time in half' — IT Director, Healthpeak..." />
+      </div>
+
+      {/* Timeline */}
+      <div className="border-t border-gray-100 pt-4 space-y-4">
+        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest">Timeline & SLA</p>
+        <DgField label="Key Milestones" hint="Beta, press, GA, event tie-in dates." value={release.keyMilestones || ''} onChange={v => onChange({ keyMilestones: v })} multiline placeholder="e.g. Beta: May 15 · Press embargo lift: June 10 · GA: June 15 · RSA event: June 20..." />
+        <DgField label="Handoff Sync Date" hint="Date for live walkthrough with demand gen team." value={release.handoffSync || ''} onChange={v => onChange({ handoffSync: v })} placeholder="e.g. June 1, 2026" />
+      </div>
+    </div>
+  );
+}
+
 export default function ReleaseIntakeForm({ release, onChange, onFinish }) {
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -514,6 +812,10 @@ export default function ReleaseIntakeForm({ release, onChange, onFinish }) {
     1: <Step1 release={release} onChange={handleChange} />,
     2: <Step2 release={release} onChange={handleChange} />,
     3: <Step3 release={release} onChange={handleChange} />,
+    6: <Step6 release={release} onChange={handleChange} />,
+    7: <Step7 release={release} onChange={handleChange} />,
+    8: <Step8 release={release} onChange={handleChange} />,
+    9: <Step9 release={release} onChange={handleChange} />,
     4: <Step4 release={release} onChange={handleChange} />,
     5: <Step5 release={release} onChange={handleChange} />,
   };

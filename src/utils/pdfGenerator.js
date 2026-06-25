@@ -456,6 +456,268 @@ export function generateProductBriefPdf(content, logoDataUrl, opts = {}) {
     });
   }
 
+  // ── Demand Gen Brief ──
+  const dg = content.demandGen;
+  if (dg) {
+    const hasAny = Object.values(dg).some(v =>
+      typeof v === 'string' ? v.trim() : Array.isArray(v) ? v.some(r => Object.values(r).some(x => x)) : false
+    );
+    if (hasAny) {
+      y = checkPage(doc, y, 40);
+      if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+      y = sectionHeading(doc, 'Demand Gen Brief', y);
+
+      function dgLabel(label, val) {
+        if (!val || !val.trim()) return y;
+        y = checkPage(doc, y, 20);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        y = subLabel(doc, label.toUpperCase(), y, NAVY);
+        y = bodyText(doc, sanitize(val), MARGIN, y, CONTENT) + 4;
+        return y;
+      }
+
+      // Launch Snapshot grid
+      const snapFields = [['Segment', dg.segment], ['CRE Sub-Motion', dg.creSubMotion], ['Primary Goal', dg.primaryGoal], ['Brief Locked By', dg.briefLockedBy]].filter(([, v]) => v && v.trim());
+      if (snapFields.length) {
+        y = checkPage(doc, y, 18);
+        doc.setFillColor(...LGRAY);
+        const snapW = (CONTENT - (snapFields.length - 1) * 3) / snapFields.length;
+        snapFields.forEach(([label, val], i) => {
+          const sx = MARGIN + i * (snapW + 3);
+          doc.setFillColor(...LGRAY);
+          doc.roundedRect(sx, y, snapW, 14, 1, 1, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7);
+          doc.setTextColor(...GRAY);
+          doc.text(label.toUpperCase(), sx + 3, y + 4.5);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          const snapColor = val === 'TBD' ? [180, 120, 0] : NAVY;
+          doc.setTextColor(...snapColor);
+          doc.text(sanitize(val), sx + 3, y + 10.5);
+        });
+        y += 18;
+      }
+
+      // ICP & Audience
+      const icpHasData = [dg.icpFirmographic, dg.qualifyingTriggers, dg.disqualifiers, dg.primaryPersonas, dg.secondaryPersonas, dg.painsJTBD].some(v => v && v.trim());
+      if (icpHasData) {
+        y = checkPage(doc, y, 20);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...BLUE);
+        doc.text('ICP & AUDIENCE', MARGIN, y);
+        y += 5;
+        dgLabel('Ideal Customer Profile', dg.icpFirmographic);
+        dgLabel('Qualifying Triggers', dg.qualifyingTriggers);
+        dgLabel('Disqualifiers', dg.disqualifiers);
+        dgLabel('Primary Personas', dg.primaryPersonas);
+        dgLabel('Secondary Personas', dg.secondaryPersonas);
+        dgLabel('Pains / Jobs-to-be-Done', dg.painsJTBD);
+      }
+
+      // Use Cases table
+      const useCases = (dg.useCases || []).filter(u => u.scenario);
+      if (useCases.length) {
+        y = checkPage(doc, y, 20 + useCases.length * 10);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...BLUE);
+        doc.text('USE CASES', MARGIN, y);
+        y += 5;
+        const ucCols = [CONTENT * 0.4, CONTENT * 0.25, CONTENT * 0.35];
+        const ucHeaders = ['Scenario', 'Persona', 'Trigger / Why Now'];
+        doc.setFillColor(...LGRAY);
+        doc.rect(MARGIN, y, CONTENT, 7, 'F');
+        let cx = MARGIN;
+        ucHeaders.forEach((h, i) => {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(...NAVY);
+          doc.text(h.toUpperCase(), cx + 3, y + 4.8);
+          cx += ucCols[i];
+        });
+        y += 7;
+        useCases.forEach((u, ri) => {
+          const rowLines = Math.max(
+            doc.splitTextToSize(sanitize(u.scenario || ''), ucCols[0] - 6).length,
+            doc.splitTextToSize(sanitize(u.persona || ''), ucCols[1] - 6).length,
+            doc.splitTextToSize(sanitize(u.trigger || ''), ucCols[2] - 6).length,
+          );
+          const rowH = rowLines * 4.5 + 6;
+          y = checkPage(doc, y, rowH + 2);
+          if (ri % 2 === 0) { doc.setFillColor(250, 250, 250); doc.rect(MARGIN, y, CONTENT, rowH, 'F'); }
+          doc.setDrawColor(...BORDER);
+          doc.setLineWidth(0.2);
+          doc.rect(MARGIN, y, CONTENT, rowH, 'S');
+          const vals = [u.scenario, u.persona, u.trigger];
+          let vx = MARGIN;
+          vals.forEach((v, i) => {
+            const lines = doc.splitTextToSize(sanitize(v || ''), ucCols[i] - 6);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(...DARK);
+            doc.text(lines, vx + 3, y + 4.5);
+            vx += ucCols[i];
+          });
+          y += rowH;
+        });
+        y += 6;
+      }
+
+      // Positioning
+      const posHasData = [dg.valueProposition, dg.differentiation, dg.approvedCopyBlock, dg.bannedPhrasing].some(v => v && v.trim()) || (dg.messagingPillars || []).some(p => p.pillar);
+      if (posHasData) {
+        y = checkPage(doc, y, 20);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...BLUE);
+        doc.text('POSITIONING & MESSAGING', MARGIN, y);
+        y += 5;
+        dgLabel('Value Proposition', dg.valueProposition);
+        const pillars = (dg.messagingPillars || []).filter(p => p.pillar);
+        if (pillars.length) {
+          y = checkPage(doc, y, 10 + pillars.length * 12);
+          y = subLabel(doc, 'MESSAGING PILLARS', y, NAVY);
+          pillars.forEach(p => {
+            const pLines = doc.splitTextToSize(sanitize(p.pillar + (p.proof ? ' -- ' + p.proof : '')), CONTENT - 6);
+            const pH = pLines.length * 4.5 + 8;
+            doc.setFillColor(...LIGHT);
+            doc.roundedRect(MARGIN, y, CONTENT, pH, 1, 1, 'F');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(...DARK);
+            doc.text(pLines, MARGIN + 4, y + 5);
+            y += pH + 3;
+          });
+          y += 3;
+        }
+        dgLabel('Differentiation', dg.differentiation);
+        dgLabel('Approved Copy Block', dg.approvedCopyBlock);
+        dgLabel('Banned Phrasing', dg.bannedPhrasing);
+      }
+
+      // Key Benefits table
+      const benefits = (dg.keyBenefits || []).filter(b => b.feature);
+      if (benefits.length) {
+        y = checkPage(doc, y, 20 + benefits.length * 10);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...BLUE);
+        doc.text('KEY BENEFITS', MARGIN, y);
+        y += 5;
+        const bColW = CONTENT / 2;
+        doc.setFillColor(...LGRAY);
+        doc.rect(MARGIN, y, CONTENT, 7, 'F');
+        ['Feature / Capability', 'Buyer Outcome'].forEach((h, i) => {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(...NAVY);
+          doc.text(h.toUpperCase(), MARGIN + 3 + i * bColW, y + 4.8);
+        });
+        y += 7;
+        benefits.forEach((b, ri) => {
+          const fLines = doc.splitTextToSize(sanitize(b.feature || ''), bColW - 6);
+          const oLines = doc.splitTextToSize(sanitize(b.outcome || ''), bColW - 6);
+          const rowH = Math.max(fLines.length, oLines.length) * 4.5 + 6;
+          y = checkPage(doc, y, rowH + 2);
+          if (ri % 2 === 0) { doc.setFillColor(250, 250, 250); doc.rect(MARGIN, y, CONTENT, rowH, 'F'); }
+          doc.setDrawColor(...BORDER);
+          doc.setLineWidth(0.2);
+          doc.rect(MARGIN, y, CONTENT, rowH, 'S');
+          doc.line(MARGIN + bColW, y, MARGIN + bColW, y + rowH);
+          [fLines, oLines].forEach((lines, i) => {
+            doc.setFont('helvetica', i === 0 ? 'bold' : 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(...DARK);
+            doc.text(lines, MARGIN + 3 + i * bColW, y + 4.5);
+          });
+          y += rowH;
+        });
+        y += 6;
+      }
+
+      // Pricing & Packaging
+      const priceHasData = [dg.pricingTiers, dg.packagingBundle, dg.discountingGuidance, dg.competitivePricePosture].some(v => v && v.trim());
+      if (priceHasData) {
+        y = checkPage(doc, y, 20);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...BLUE);
+        doc.text('PRICING & PACKAGING', MARGIN, y);
+        y += 5;
+        dgLabel('Price Points / Tiers', dg.pricingTiers);
+        dgLabel('Packaging / Bundle', dg.packagingBundle);
+        dgLabel('Discounting / Deal Guidance', dg.discountingGuidance);
+        dgLabel('Competitive Price Posture', dg.competitivePricePosture);
+      }
+
+      // Market & Opportunity
+      const mktHasData = [dg.marketSizing, dg.bestOpportunity, dg.demandSignals, dg.marketTrends, dg.analystValidation].some(v => v && v.trim());
+      if (mktHasData) {
+        y = checkPage(doc, y, 20);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...BLUE);
+        doc.text('MARKET & OPPORTUNITY', MARGIN, y);
+        y += 5;
+        dgLabel('Market Sizing (TAM/SAM/SOM)', dg.marketSizing);
+        dgLabel('Best Opportunity', dg.bestOpportunity);
+        dgLabel('Demand & Intent Signals', dg.demandSignals);
+        dgLabel('Market Trends / Tailwinds', dg.marketTrends);
+        dgLabel('Analyst / Third-Party Validation', dg.analystValidation);
+      }
+
+      // Competitive
+      if (dg.competitiveWedge || dg.topObjections) {
+        y = checkPage(doc, y, 20);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...BLUE);
+        doc.text('COMPETITIVE', MARGIN, y);
+        y += 5;
+        dgLabel('The Wedge', dg.competitiveWedge);
+        dgLabel('Top Objections + Counters', dg.topObjections);
+      }
+
+      // Proof Points
+      const proofHasData = [dg.statsAndBenchmarks, dg.customerNamesCleared, dg.roiTcoFigures, dg.quotesAndCaseStudies].some(v => v && v.trim());
+      if (proofHasData) {
+        y = checkPage(doc, y, 20);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...BLUE);
+        doc.text('PROOF POINTS & EVIDENCE', MARGIN, y);
+        y += 5;
+        dgLabel('Stats / Benchmarks', dg.statsAndBenchmarks);
+        dgLabel('Customer Names Cleared', dg.customerNamesCleared);
+        dgLabel('ROI / TCO / NOI Figures', dg.roiTcoFigures);
+        dgLabel('Quotes & Case Studies', dg.quotesAndCaseStudies);
+      }
+
+      // Timeline
+      if (dg.keyMilestones || dg.handoffSync) {
+        y = checkPage(doc, y, 20);
+        if (y === 28) header(doc, 'Product Brief for Sales', logoDataUrl);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...BLUE);
+        doc.text('TIMELINE & SLA', MARGIN, y);
+        y += 5;
+        dgLabel('Key Milestones', dg.keyMilestones);
+        dgLabel('Handoff Sync', dg.handoffSync);
+      }
+    }
+  }
+
   if (!skipFooters) {
     const total = doc.getNumberOfPages();
     for (let i = 1; i <= total; i++) {

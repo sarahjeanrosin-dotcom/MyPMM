@@ -196,6 +196,189 @@ function buildBriefChildren(content) {
       })),
     ] : []),
   ];
+
+  // ── Demand Gen Brief ──
+  const dg = content.demandGen;
+  if (dg) {
+    const hasAny = Object.values(dg).some(v =>
+      typeof v === 'string' ? v.trim() : Array.isArray(v) ? v.some(r => Object.values(r).some(x => x)) : false
+    );
+    if (hasAny) {
+      children.push(heading2('Demand Gen Brief'));
+
+      function dgField(label, val) {
+        if (!val || !val.trim()) return;
+        children.push(...labeledField(label, val));
+      }
+
+      function dgSubHead(label) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: label.toUpperCase(), bold: true, size: 17, color: BLUE_HEX, font: 'Calibri' })],
+          spacing: { before: 200, after: 60 },
+        }));
+      }
+
+      // Launch Snapshot
+      const snapFields = [['Segment', dg.segment], ['CRE Sub-Motion', dg.creSubMotion], ['Primary Goal', dg.primaryGoal], ['Brief Locked By', dg.briefLockedBy]].filter(([, v]) => v && v.trim());
+      if (snapFields.length) {
+        children.push(new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({
+              children: snapFields.map(([label, val]) =>
+                new TableCell({
+                  children: [
+                    new Paragraph({ children: [new TextRun({ text: label, bold: true, size: 15, color: GRAY_HEX, font: 'Calibri' })], spacing: { after: 20 } }),
+                    new Paragraph({ children: [new TextRun({ text: val, bold: true, size: 18, color: val === 'TBD' ? 'B47800' : NAVY_HEX, font: 'Calibri' })] }),
+                  ],
+                  shading: { type: ShadingType.SOLID, color: 'F1F5F9', fill: 'F1F5F9' },
+                  margins: { top: 80, bottom: 80, left: 100, right: 100 },
+                })
+              ),
+            }),
+          ],
+        }), new Paragraph({ spacing: { after: 120 } }));
+      }
+
+      // ICP & Audience
+      if ([dg.icpFirmographic, dg.qualifyingTriggers, dg.disqualifiers, dg.primaryPersonas, dg.secondaryPersonas, dg.painsJTBD].some(v => v && v.trim())) {
+        dgSubHead('ICP & Audience');
+        dgField('Ideal Customer Profile', dg.icpFirmographic);
+        dgField('Qualifying Triggers', dg.qualifyingTriggers);
+        dgField('Disqualifiers', dg.disqualifiers);
+        dgField('Primary Personas', dg.primaryPersonas);
+        dgField('Secondary Personas', dg.secondaryPersonas);
+        dgField('Pains / Jobs-to-be-Done', dg.painsJTBD);
+      }
+
+      // Use Cases
+      const useCases = (dg.useCases || []).filter(u => u.scenario);
+      if (useCases.length) {
+        dgSubHead('Use Cases');
+        children.push(new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({
+              children: ['Scenario', 'Persona', 'Trigger / Why Now'].map(h =>
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: h.toUpperCase(), bold: true, size: 16, color: 'FFFFFF', font: 'Calibri' })] })],
+                  shading: { type: ShadingType.SOLID, color: NAVY_HEX, fill: NAVY_HEX },
+                  margins: { top: 60, bottom: 60, left: 80, right: 80 },
+                })
+              ),
+            }),
+            ...useCases.map((u, i) => new TableRow({
+              children: [u.scenario, u.persona, u.trigger].map(v =>
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: v || '', size: 17, color: '1E293B', font: 'Calibri' })] })],
+                  shading: { type: ShadingType.SOLID, color: i % 2 === 0 ? 'F8FAFC' : 'FFFFFF', fill: i % 2 === 0 ? 'F8FAFC' : 'FFFFFF' },
+                  margins: { top: 60, bottom: 60, left: 80, right: 80 },
+                })
+              ),
+            })),
+          ],
+        }), new Paragraph({ spacing: { after: 120 } }));
+      }
+
+      // Positioning & Messaging
+      if ([dg.valueProposition, dg.differentiation, dg.approvedCopyBlock, dg.bannedPhrasing].some(v => v && v.trim()) || (dg.messagingPillars || []).some(p => p.pillar)) {
+        dgSubHead('Positioning & Messaging');
+        dgField('Value Proposition', dg.valueProposition);
+        const pillars = (dg.messagingPillars || []).filter(p => p.pillar);
+        if (pillars.length) {
+          children.push(new Paragraph({ children: [new TextRun({ text: 'MESSAGING PILLARS', bold: true, size: 16, color: NAVY_HEX, font: 'Calibri' })], spacing: { before: 100, after: 40 } }));
+          pillars.forEach(p => {
+            children.push(new Paragraph({
+              children: [
+                new TextRun({ text: p.pillar, bold: true, size: 17, color: NAVY_HEX, font: 'Calibri' }),
+                ...(p.proof ? [new TextRun({ text: ` — ${p.proof}`, size: 17, color: GRAY_HEX, font: 'Calibri' })] : []),
+              ],
+              shading: { type: ShadingType.SOLID, color: LIGHT_HEX, fill: LIGHT_HEX },
+              spacing: { before: 40, after: 40 },
+              indent: { left: 80, right: 80 },
+            }));
+          });
+        }
+        dgField('Differentiation', dg.differentiation);
+        dgField('Approved Copy Block', dg.approvedCopyBlock);
+        dgField('Banned Phrasing', dg.bannedPhrasing);
+      }
+
+      // Key Benefits
+      const benefits = (dg.keyBenefits || []).filter(b => b.feature);
+      if (benefits.length) {
+        dgSubHead('Key Benefits');
+        children.push(new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({
+              children: ['Feature / Capability', 'Buyer Outcome'].map(h =>
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: h.toUpperCase(), bold: true, size: 16, color: 'FFFFFF', font: 'Calibri' })] })],
+                  shading: { type: ShadingType.SOLID, color: NAVY_HEX, fill: NAVY_HEX },
+                  margins: { top: 60, bottom: 60, left: 80, right: 80 },
+                  width: { size: 50, type: WidthType.PERCENTAGE },
+                })
+              ),
+            }),
+            ...benefits.map((b, i) => new TableRow({
+              children: [b.feature, b.outcome].map((v, ci) =>
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: v || '', bold: ci === 0, size: 17, color: '1E293B', font: 'Calibri' })] })],
+                  shading: { type: ShadingType.SOLID, color: i % 2 === 0 ? 'F8FAFC' : 'FFFFFF', fill: i % 2 === 0 ? 'F8FAFC' : 'FFFFFF' },
+                  margins: { top: 60, bottom: 60, left: 80, right: 80 },
+                  width: { size: 50, type: WidthType.PERCENTAGE },
+                })
+              ),
+            })),
+          ],
+        }), new Paragraph({ spacing: { after: 120 } }));
+      }
+
+      // Pricing & Packaging
+      if ([dg.pricingTiers, dg.packagingBundle, dg.discountingGuidance, dg.competitivePricePosture].some(v => v && v.trim())) {
+        dgSubHead('Pricing & Packaging');
+        dgField('Price Points / Tiers', dg.pricingTiers);
+        dgField('Packaging / Bundle', dg.packagingBundle);
+        dgField('Discounting / Deal Guidance', dg.discountingGuidance);
+        dgField('Competitive Price Posture', dg.competitivePricePosture);
+      }
+
+      // Market & Opportunity
+      if ([dg.marketSizing, dg.bestOpportunity, dg.demandSignals, dg.marketTrends, dg.analystValidation].some(v => v && v.trim())) {
+        dgSubHead('Market & Opportunity');
+        dgField('Market Sizing (TAM/SAM/SOM)', dg.marketSizing);
+        dgField('Best Opportunity', dg.bestOpportunity);
+        dgField('Demand & Intent Signals', dg.demandSignals);
+        dgField('Market Trends / Tailwinds', dg.marketTrends);
+        dgField('Analyst / Third-Party Validation', dg.analystValidation);
+      }
+
+      // Competitive
+      if (dg.competitiveWedge || dg.topObjections) {
+        dgSubHead('Competitive');
+        dgField('The Wedge', dg.competitiveWedge);
+        dgField('Top Objections + Counters', dg.topObjections);
+      }
+
+      // Proof Points
+      if ([dg.statsAndBenchmarks, dg.customerNamesCleared, dg.roiTcoFigures, dg.quotesAndCaseStudies].some(v => v && v.trim())) {
+        dgSubHead('Proof Points & Evidence');
+        dgField('Stats / Benchmarks', dg.statsAndBenchmarks);
+        dgField('Customer Names Cleared', dg.customerNamesCleared);
+        dgField('ROI / TCO / NOI Figures', dg.roiTcoFigures);
+        dgField('Quotes & Case Studies', dg.quotesAndCaseStudies);
+      }
+
+      // Timeline
+      if (dg.keyMilestones || dg.handoffSync) {
+        dgSubHead('Timeline & SLA');
+        dgField('Key Milestones', dg.keyMilestones);
+        dgField('Handoff Sync', dg.handoffSync);
+      }
+    }
+  }
+
   return children;
 }
 

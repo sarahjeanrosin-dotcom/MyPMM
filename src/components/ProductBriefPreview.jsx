@@ -223,6 +223,197 @@ export default function ProductBriefPreview({ content, onContentChange }) {
           </div>
         )}
 
+        {/* ── Demand Gen Brief ── */}
+        {content.demandGen && (() => {
+          const dg = content.demandGen;
+          const hasAny = Object.values(dg).some(v =>
+            typeof v === 'string' ? v.trim() : Array.isArray(v) ? v.some(r => Object.values(r).some(x => x)) : false
+          );
+          if (!hasAny) return null;
+
+          function dgUpdate(field, value) {
+            update('demandGen.' + field, value);
+          }
+
+          function DgRow({ label, field, multiline }) {
+            const val = dg[field];
+            if (!val) return null;
+            return (
+              <div className="mb-3">
+                <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1">{label}</p>
+                <div className={`text-sm text-gray-700 leading-relaxed ${val === 'TBD' ? 'text-amber-600 font-semibold' : ''}`}>
+                  <EditableField value={val} onChange={v => dgUpdate(field, v)} multiline={multiline} placeholder={label} />
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="mt-6">
+              <div className="bg-genea-bright px-4 py-2 rounded-t-lg">
+                <h3 className="text-white font-bold text-sm uppercase tracking-wider">Demand Gen Brief</h3>
+              </div>
+              <div className="border border-t-0 border-gray-200 rounded-b-lg p-5 space-y-5">
+
+                {/* Launch Snapshot */}
+                {(dg.segment || dg.primaryGoal || dg.creSubMotion) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">Launch Snapshot</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[['Segment', 'segment'], ['CRE Sub-Motion', 'creSubMotion'], ['Primary Goal', 'primaryGoal'], ['Brief Locked By', 'briefLockedBy']].map(([label, field]) =>
+                        dg[field] ? (
+                          <div key={field} className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+                            <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+                            <p className={`text-sm font-semibold ${dg[field] === 'TBD' ? 'text-amber-600' : 'text-genea-navy'}`}>{dg[field]}</p>
+                          </div>
+                        ) : null
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ICP & Audience */}
+                {(dg.icpFirmographic || dg.qualifyingTriggers || dg.disqualifiers || dg.primaryPersonas || dg.secondaryPersonas || dg.painsJTBD) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">ICP & Audience</p>
+                    <DgRow label="Ideal Customer Profile" field="icpFirmographic" multiline />
+                    <DgRow label="Qualifying Triggers" field="qualifyingTriggers" multiline />
+                    <DgRow label="Disqualifiers" field="disqualifiers" multiline />
+                    <DgRow label="Primary Personas" field="primaryPersonas" multiline />
+                    <DgRow label="Secondary Personas" field="secondaryPersonas" multiline />
+                    <DgRow label="Pains / Jobs-to-be-Done" field="painsJTBD" multiline />
+                  </div>
+                )}
+
+                {/* Use Cases */}
+                {dg.useCases?.some(u => u.scenario) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">Use Cases</p>
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          {['Scenario', 'Persona', 'Trigger / Why Now'].map(h => (
+                            <th key={h} className="text-left px-3 py-1.5 text-xs font-bold text-genea-navy uppercase tracking-wide border border-gray-200">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dg.useCases.filter(u => u.scenario).map((u, i) => (
+                          <tr key={i} className="border-b border-gray-100">
+                            <td className="px-3 py-2 border border-gray-200 text-gray-800">{u.scenario}</td>
+                            <td className="px-3 py-2 border border-gray-200 text-gray-700">{u.persona}</td>
+                            <td className="px-3 py-2 border border-gray-200 text-gray-700">{u.trigger}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Positioning */}
+                {(dg.valueProposition || dg.differentiation || dg.approvedCopyBlock || dg.bannedPhrasing || dg.messagingPillars?.some(p => p.pillar)) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">Positioning & Messaging</p>
+                    <DgRow label="Value Proposition" field="valueProposition" />
+                    {dg.messagingPillars?.some(p => p.pillar) && (
+                      <div className="mb-3">
+                        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-1">Messaging Pillars</p>
+                        <div className="space-y-1.5">
+                          {dg.messagingPillars.filter(p => p.pillar).map((p, i) => (
+                            <div key={i} className="bg-genea-light rounded-lg px-3 py-2 border border-genea-bright/20">
+                              <span className="font-semibold text-genea-navy text-sm">{p.pillar}</span>
+                              {p.proof && <span className="text-gray-500 text-sm"> — {p.proof}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <DgRow label="Differentiation" field="differentiation" />
+                    <DgRow label="Approved Copy Block" field="approvedCopyBlock" multiline />
+                    <DgRow label="Banned Phrasing" field="bannedPhrasing" />
+                  </div>
+                )}
+
+                {/* Key Benefits */}
+                {dg.keyBenefits?.some(b => b.feature) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">Key Benefits</p>
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="text-left px-3 py-1.5 text-xs font-bold text-genea-navy uppercase tracking-wide border border-gray-200 w-1/2">Feature / Capability</th>
+                          <th className="text-left px-3 py-1.5 text-xs font-bold text-genea-navy uppercase tracking-wide border border-gray-200">Buyer Outcome</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dg.keyBenefits.filter(b => b.feature).map((b, i) => (
+                          <tr key={i} className="border-b border-gray-100">
+                            <td className="px-3 py-2 border border-gray-200 font-medium text-gray-800">{b.feature}</td>
+                            <td className="px-3 py-2 border border-gray-200 text-gray-700">{b.outcome}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Pricing */}
+                {(dg.pricingTiers || dg.packagingBundle || dg.discountingGuidance || dg.competitivePricePosture) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">Pricing & Packaging</p>
+                    <DgRow label="Price Points / Tiers" field="pricingTiers" multiline />
+                    <DgRow label="Packaging / Bundle" field="packagingBundle" multiline />
+                    <DgRow label="Discounting / Deal Guidance" field="discountingGuidance" multiline />
+                    <DgRow label="Competitive Price Posture" field="competitivePricePosture" />
+                  </div>
+                )}
+
+                {/* Market */}
+                {(dg.marketSizing || dg.bestOpportunity || dg.demandSignals || dg.marketTrends || dg.analystValidation) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">Market & Opportunity</p>
+                    <DgRow label="Market Sizing (TAM/SAM/SOM)" field="marketSizing" multiline />
+                    <DgRow label="Best Opportunity" field="bestOpportunity" multiline />
+                    <DgRow label="Demand & Intent Signals" field="demandSignals" multiline />
+                    <DgRow label="Market Trends / Tailwinds" field="marketTrends" multiline />
+                    <DgRow label="Analyst / Third-Party Validation" field="analystValidation" multiline />
+                  </div>
+                )}
+
+                {/* Competitive */}
+                {(dg.competitiveWedge || dg.topObjections) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">Competitive</p>
+                    <DgRow label="The Wedge" field="competitiveWedge" />
+                    <DgRow label="Top Objections + Counters" field="topObjections" multiline />
+                  </div>
+                )}
+
+                {/* Proof Points */}
+                {(dg.statsAndBenchmarks || dg.customerNamesCleared || dg.roiTcoFigures || dg.quotesAndCaseStudies) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">Proof Points & Evidence</p>
+                    <DgRow label="Stats / Benchmarks" field="statsAndBenchmarks" multiline />
+                    <DgRow label="Customer Names Cleared" field="customerNamesCleared" />
+                    <DgRow label="ROI / TCO / NOI Figures" field="roiTcoFigures" multiline />
+                    <DgRow label="Quotes & Case Studies" field="quotesAndCaseStudies" multiline />
+                  </div>
+                )}
+
+                {/* Timeline */}
+                {(dg.keyMilestones || dg.handoffSync) && (
+                  <div>
+                    <p className="text-xs font-bold text-genea-navy/50 uppercase tracking-widest mb-2">Timeline & SLA</p>
+                    <DgRow label="Key Milestones" field="keyMilestones" multiline />
+                    <DgRow label="Handoff Sync" field="handoffSync" />
+                  </div>
+                )}
+
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Footer */}
         <div className="border-t border-gray-200 pt-4 mt-6 flex items-center justify-between">
           <p className="text-xs text-gray-400">© Genea Security — Confidential</p>
