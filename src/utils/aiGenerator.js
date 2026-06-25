@@ -75,6 +75,32 @@ export async function generateMarketingCopy(release) {
   return res.json();
 }
 
+export async function generateDgSuggestion(fieldKey, release) {
+  const res = await fetch('/.netlify/functions/generateDgSuggestions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fieldKey,
+      release: {
+        productName: release.productName,
+        productSuite: release.productSuite,
+        productInformation: release.productInformation,
+        endUserWhat: release.endUserWhat,
+        endUserWho: release.endUserWho,
+        endUserWhy: release.endUserWhy,
+        competitors: release.competitors,
+        tierLevel: release.tierLevel,
+      },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Request failed (${res.status})`);
+  }
+  const data = await res.json();
+  return data.suggestion;
+}
+
 export async function generateWhoWhatWhy(release) {
   const res = await fetch('/api/generateWhoWhatWhy', {
     method: 'POST',

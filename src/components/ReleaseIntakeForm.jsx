@@ -7,7 +7,7 @@ import VerticalSelector from './VerticalSelector';
 import CollateralSelector from './CollateralSelector';
 import { tierConfig } from '../config/tierConfig';
 import { sampleRelease } from '../data/sampleData';
-import { generateWhoWhatWhy } from '../utils/aiGenerator';
+import { generateWhoWhatWhy, generateDgSuggestion } from '../utils/aiGenerator';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
@@ -497,35 +497,76 @@ function Step5({ release, onChange }) {
   );
 }
 
-// ── TBD toggle helper ────────────────────────────────────────────
-function TbdToggle({ value, onToggle }) {
-  const isTbd = value === 'TBD';
+// ── TBD / N/A / AI helpers ───────────────────────────────────────
+function StatusBadge({ value, target, label, activeClass, onChange }) {
+  const isActive = value === target;
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={() => onChange(isActive ? '' : target)}
       className={`text-xs font-semibold px-2 py-0.5 rounded border transition-all ${
-        isTbd
-          ? 'bg-amber-50 text-amber-700 border-amber-300'
-          : 'text-gray-300 border-gray-200 hover:text-genea-navy hover:border-gray-400'
+        isActive ? activeClass : 'text-gray-300 border-gray-200 hover:text-gray-500 hover:border-gray-400'
       }`}
     >
-      {isTbd ? 'TBD ×' : 'TBD'}
+      {isActive ? `${label} ×` : label}
     </button>
   );
 }
 
-function DgField({ label, hint, value, onChange, multiline = false, placeholder = '' }) {
+function DgField({ label, hint, value, onChange, multiline = false, placeholder = '', onSuggest }) {
+  const [suggesting, setSuggesting] = useState(false);
+  const [error, setError] = useState(null);
   const isTbd = value === 'TBD';
+  const isNa  = value === 'N/A';
+  const isSpecial = isTbd || isNa;
+
+  async function handleSuggest() {
+    setSuggesting(true);
+    setError(null);
+    try {
+      const suggestion = await onSuggest();
+      if (suggestion) onChange(typeof suggestion === 'string' ? suggestion : JSON.stringify(suggestion));
+    } catch (e) {
+      setError('AI suggest failed — try again.');
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
         <label className="genea-label mb-0">{label}</label>
-        <TbdToggle value={value} onToggle={() => onChange(isTbd ? '' : 'TBD')} />
+        <div className="flex items-center gap-1.5">
+          {onSuggest && (
+            <button
+              type="button"
+              onClick={handleSuggest}
+              disabled={suggesting || isSpecial}
+              className={`text-xs font-semibold px-2 py-0.5 rounded border transition-all flex items-center gap-1 ${
+                suggesting || isSpecial
+                  ? 'text-gray-300 border-gray-200 cursor-not-allowed'
+                  : 'text-genea-bright border-genea-bright/40 hover:bg-genea-light hover:border-genea-bright'
+              }`}
+            >
+              {suggesting ? (
+                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+              ) : '✨'} AI
+            </button>
+          )}
+          <StatusBadge value={value} target="TBD" label="TBD" activeClass="bg-amber-50 text-amber-700 border-amber-300" onChange={onChange} />
+          <StatusBadge value={value} target="N/A" label="N/A" activeClass="bg-gray-100 text-gray-500 border-gray-400" onChange={onChange} />
+        </div>
       </div>
       {hint && <p className="text-xs text-gray-400 mb-1.5">{hint}</p>}
-      {isTbd ? (
-        <div className="genea-input bg-amber-50 text-amber-600 text-sm font-semibold">TBD</div>
+      {error && <p className="text-xs text-red-500 mb-1">{error}</p>}
+      {isSpecial ? (
+        <div className={`genea-input text-sm font-semibold ${isTbd ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-400'}`}>
+          {isTbd ? 'TBD' : 'N/A'}
+        </div>
       ) : multiline ? (
         <textarea
           value={value || ''}
@@ -552,6 +593,7 @@ function Step6({ release, onChange }) {
   const SEGMENTS   = ['Security end-user', 'CRE', 'Both', 'TBD'];
   const CRE_SUBS   = ['Submeter Billing', 'On-Demand HVAC', 'Security + VM', 'TBD', 'N/A'];
   const GOALS      = ['Pipeline $', 'Awareness', 'Expansion', 'TBD'];
+  const suggest = (field) => () => generateDgSuggestion(field, release);
 
   return (
     <div className="space-y-5">
@@ -581,6 +623,7 @@ function Step6({ release, onChange }) {
           hint="Company type, size, vertical, geography. For CRE: Class A office, building SF, REIT vs owner-operator. For Security: multi-site, healthcare, higher ed."
           value={release.icpFirmographic || ''}
           onChange={v => onChange({ icpFirmographic: v })}
+          onSuggest={suggest('icpFirmographic')}
           multiline
           placeholder="e.g. Multi-site enterprise, 500+ employees, healthcare or higher ed verticals, North America..."
         />
@@ -589,6 +632,7 @@ function Step6({ release, onChange }) {
           hint="What makes an account in-market now."
           value={release.qualifyingTriggers || ''}
           onChange={v => onChange({ qualifyingTriggers: v })}
+          onSuggest={suggest('qualifyingTriggers')}
           multiline
           placeholder="e.g. Lease event, migration off on-prem, expansion, refresh cycle..."
         />
@@ -597,6 +641,7 @@ function Step6({ release, onChange }) {
           hint="Who this is NOT for. Prevents wasted spend."
           value={release.disqualifiers || ''}
           onChange={v => onChange({ disqualifiers: v })}
+          onSuggest={suggest('disqualifiers')}
           multiline
           placeholder="e.g. Single-site SMB, residential, non-enterprise..."
         />
@@ -604,6 +649,7 @@ function Step6({ release, onChange }) {
           label="Primary Persona(s) and Titles"
           value={release.primaryPersonas || ''}
           onChange={v => onChange({ primaryPersonas: v })}
+          onSuggest={suggest('primaryPersonas')}
           multiline
           placeholder="e.g. Director of Physical Security, VP of Real Estate, IT Manager..."
         />
@@ -611,6 +657,7 @@ function Step6({ release, onChange }) {
           label="Secondary / Influencer Personas"
           value={release.secondaryPersonas || ''}
           onChange={v => onChange({ secondaryPersonas: v })}
+          onSuggest={suggest('secondaryPersonas')}
           multiline
           placeholder="e.g. CIO, Facilities Manager, Building Owner..."
         />
@@ -618,6 +665,7 @@ function Step6({ release, onChange }) {
           label="Pains / Jobs-to-be-Done per Persona"
           value={release.painsJTBD || ''}
           onChange={v => onChange({ painsJTBD: v })}
+          onSuggest={suggest('painsJTBD')}
           multiline
           placeholder="e.g. Security Director: needs centralized visibility across sites without rip-and-replace..."
         />
@@ -628,6 +676,10 @@ function Step6({ release, onChange }) {
 
 // Step 7: Use Cases & Positioning
 function Step7({ release, onChange }) {
+  const [pillarsSuggesting, setPillarsSuggesting] = useState(false);
+  const [pillarsError, setPillarsError] = useState(null);
+  const suggest = (field) => () => generateDgSuggestion(field, release);
+
   function updateUseCase(i, field, val) {
     const updated = (release.useCases || []).map((uc, idx) => idx === i ? { ...uc, [field]: val } : uc);
     onChange({ useCases: updated });
@@ -641,6 +693,18 @@ function Step7({ release, onChange }) {
   function updatePillar(i, field, val) {
     const pillars = (release.messagingPillars || [{},{},{}]).map((p, idx) => idx === i ? { ...p, [field]: val } : p);
     onChange({ messagingPillars: pillars });
+  }
+  async function suggestPillars() {
+    setPillarsSuggesting(true);
+    setPillarsError(null);
+    try {
+      const result = await generateDgSuggestion('messagingPillars', release);
+      if (Array.isArray(result)) onChange({ messagingPillars: result });
+    } catch {
+      setPillarsError('AI suggest failed — try again.');
+    } finally {
+      setPillarsSuggesting(false);
+    }
   }
 
   return (
@@ -666,9 +730,29 @@ function Step7({ release, onChange }) {
       {/* Positioning */}
       <div className="border-t border-gray-100 pt-4 space-y-4">
         <p className="text-xs font-bold text-genea-navy uppercase tracking-widest">Positioning & Messaging</p>
-        <DgField label="One-line Value Proposition" value={release.valueProposition || ''} onChange={v => onChange({ valueProposition: v })} placeholder="e.g. The only enterprise-grade hands-free access platform with native Apple Watch support." />
+        <DgField label="One-line Value Proposition" value={release.valueProposition || ''} onChange={v => onChange({ valueProposition: v })} onSuggest={suggest('valueProposition')} placeholder="e.g. The only enterprise-grade hands-free access platform with native Apple Watch support." />
         <div>
-          <p className="genea-label">Messaging Pillars</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="genea-label mb-0">Messaging Pillars</p>
+            <button
+              type="button"
+              onClick={suggestPillars}
+              disabled={pillarsSuggesting}
+              className={`text-xs font-semibold px-2 py-0.5 rounded border transition-all flex items-center gap-1 ${
+                pillarsSuggesting
+                  ? 'text-gray-300 border-gray-200 cursor-not-allowed'
+                  : 'text-genea-bright border-genea-bright/40 hover:bg-genea-light hover:border-genea-bright'
+              }`}
+            >
+              {pillarsSuggesting ? (
+                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+              ) : '✨'} AI Generate All
+            </button>
+          </div>
+          {pillarsError && <p className="text-xs text-red-500 mb-1">{pillarsError}</p>}
           {[0, 1, 2].map(i => (
             <div key={i} className="grid grid-cols-2 gap-2 mb-2">
               <input
@@ -687,7 +771,7 @@ function Step7({ release, onChange }) {
           ))}
           <p className="text-xs text-gray-400">Left: pillar statement · Right: supporting proof point</p>
         </div>
-        <DgField label="One-sentence Differentiation" value={release.differentiation || ''} onChange={v => onChange({ differentiation: v })} placeholder="e.g. Unlike Openpath, Genea delivers hands-free UWB unlock without proprietary hardware lock-in." />
+        <DgField label="One-sentence Differentiation" value={release.differentiation || ''} onChange={v => onChange({ differentiation: v })} onSuggest={suggest('differentiation')} placeholder="e.g. Unlike Openpath, Genea delivers hands-free UWB unlock without proprietary hardware lock-in." />
         <DgField label="Approved Copy Block" hint="Pre-cleared short paragraph demand gen can paste into a newsletter or ad unit." value={release.approvedCopyBlock || ''} onChange={v => onChange({ approvedCopyBlock: v })} multiline placeholder="Drop-in approved paragraph..." />
         <DgField label="Banned / Off-message Phrasing" value={release.bannedPhrasing || ''} onChange={v => onChange({ bannedPhrasing: v })} placeholder="e.g. Don't mention NFC limitations, avoid 'revolutionary'..." />
       </div>
@@ -698,6 +782,8 @@ function Step7({ release, onChange }) {
 // Step 8: Benefits, Pricing & Market
 function Step8({ release, onChange }) {
   const POSTURES = ['Premium', 'Parity', 'Value', 'TBD'];
+  const [benefitsSuggesting, setBenefitsSuggesting] = useState(false);
+  const [benefitsError, setBenefitsError] = useState(null);
 
   function updateBenefit(i, field, val) {
     const updated = (release.keyBenefits || []).map((b, idx) => idx === i ? { ...b, [field]: val } : b);
@@ -709,12 +795,44 @@ function Step8({ release, onChange }) {
   function removeBenefit(i) {
     onChange({ keyBenefits: (release.keyBenefits || []).filter((_, idx) => idx !== i) });
   }
+  async function suggestBenefits() {
+    setBenefitsSuggesting(true);
+    setBenefitsError(null);
+    try {
+      const result = await generateDgSuggestion('keyBenefits', release);
+      if (Array.isArray(result)) onChange({ keyBenefits: result });
+    } catch {
+      setBenefitsError('AI suggest failed — try again.');
+    } finally {
+      setBenefitsSuggesting(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
       {/* Key Benefits */}
       <div>
-        <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-3">Key Benefits & Features</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-bold text-genea-navy uppercase tracking-widest">Key Benefits & Features</p>
+          <button
+            type="button"
+            onClick={suggestBenefits}
+            disabled={benefitsSuggesting}
+            className={`text-xs font-semibold px-2 py-0.5 rounded border transition-all flex items-center gap-1 ${
+              benefitsSuggesting
+                ? 'text-gray-300 border-gray-200 cursor-not-allowed'
+                : 'text-genea-bright border-genea-bright/40 hover:bg-genea-light hover:border-genea-bright'
+            }`}
+          >
+            {benefitsSuggesting ? (
+              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+            ) : '✨'} AI Generate All
+          </button>
+        </div>
+        {benefitsError && <p className="text-xs text-red-500 mb-2">{benefitsError}</p>}
         <div className="grid grid-cols-2 gap-2 mb-1">
           <p className="text-xs text-gray-400 font-semibold">Feature / capability</p>
           <p className="text-xs text-gray-400 font-semibold">Buyer outcome (the so-what)</p>
@@ -761,14 +879,15 @@ function Step8({ release, onChange }) {
 
 // Step 9: Competitive, Proof Points & Timeline
 function Step9({ release, onChange }) {
+  const suggest = (field) => () => generateDgSuggestion(field, release);
   return (
     <div className="space-y-5">
       {/* Competitive */}
       <div>
         <p className="text-xs font-bold text-genea-navy uppercase tracking-widest mb-3">Competitive</p>
         <div className="space-y-4">
-          <DgField label="The Wedge (what we win on)" value={release.competitiveWedge || ''} onChange={v => onChange({ competitiveWedge: v })} placeholder="e.g. Open API, no hardware lock-in, cloud-native architecture..." />
-          <DgField label="Top Objections + Counters" value={release.topObjections || ''} onChange={v => onChange({ topObjections: v })} multiline placeholder="Objection: [x] → Counter: [y]&#10;Objection: [x] → Counter: [y]" />
+          <DgField label="The Wedge (what we win on)" value={release.competitiveWedge || ''} onChange={v => onChange({ competitiveWedge: v })} onSuggest={suggest('competitiveWedge')} placeholder="e.g. Open API, no hardware lock-in, cloud-native architecture..." />
+          <DgField label="Top Objections + Counters" value={release.topObjections || ''} onChange={v => onChange({ topObjections: v })} onSuggest={suggest('topObjections')} multiline placeholder="Objection: [x] → Counter: [y]&#10;Objection: [x] → Counter: [y]" />
         </div>
       </div>
 
