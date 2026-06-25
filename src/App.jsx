@@ -12,7 +12,9 @@ import RawInputScreen from './components/RawInputScreen';
 import MissingInfoQuestions from './components/MissingInfoQuestions';
 import ProductBriefPreview from './components/ProductBriefPreview';
 import MarketingPlaybookPreview from './components/MarketingPlaybookPreview';
+import ProjectsDashboard from './components/ProjectsDashboard';
 import { GeneaLogo, GeneaLogoWhite } from './components/BrandTheme';
+import { supabase } from './lib/supabase';
 
 const STORAGE_KEY = 'genea_pmm_release';
 const VIEW_KEY = 'genea_pmm_view';
@@ -230,7 +232,7 @@ function ReviewScreen({ release, onUpdate, onGenerate, onBack }) {
 // ───────────────────────────────────────────────────────────────
 // Documents View — tabbed, SaaS layout
 // ───────────────────────────────────────────────────────────────
-function DocumentsView({ release, briefContent, playbookContent, onBriefChange, onPlaybookChange, onBack }) {
+function DocumentsView({ release, briefContent, playbookContent, onBriefChange, onPlaybookChange, onBack, saveStatus, onSave }) {
   const hasBrief    = Boolean(briefContent);
   const hasPlaybook = Boolean(playbookContent);
 
@@ -287,8 +289,31 @@ function DocumentsView({ release, briefContent, playbookContent, onBriefChange, 
           </p>
         </div>
 
-        {/* Combined download buttons */}
+        {/* Save + download buttons */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={onSave}
+            disabled={saveStatus === 'saving'}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all border ${
+              saveStatus === 'saved'
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : saveStatus === 'error'
+                ? 'bg-red-50 text-red-600 border-red-200'
+                : 'bg-white text-genea-navy border-genea-navy/30 hover:bg-genea-light'
+            }`}
+          >
+            {saveStatus === 'saving' ? (
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+            )}
+            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : saveStatus === 'error' ? 'Save failed' : 'Save'}
+          </button>
           {[
             { fmt: 'word', label: 'Download .docx', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
             { fmt: 'pdf',  label: 'Download PDF',  icon: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
@@ -320,6 +345,7 @@ function DocumentsView({ release, briefContent, playbookContent, onBriefChange, 
           ))}
         </div>
       </div>
+
 
       {/* Tab bar */}
       {tabs.length > 1 && (
@@ -394,6 +420,9 @@ export default function App() {
     return null;
   });
 
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [saveStatus, setSaveStatus] = useState(null); // 'saving' | 'saved' | 'error' | null
+
   // Persist to localStorage on every change
   useEffect(() => {
     try {
@@ -407,10 +436,44 @@ export default function App() {
     } catch {}
   }, [view]);
 
+  async function saveProject(releaseData, brief, playbook, projectId) {
+    setSaveStatus('saving');
+    const payload = {
+      name: releaseData.productName || 'Untitled Project',
+      tier: releaseData.tierLevel || null,
+      release_date: releaseData.releaseDate || null,
+      updated_at: new Date().toISOString(),
+      release_data: { ...releaseData, generatedProductBrief: brief, generatedMarketingPlaybook: playbook },
+    };
+    let id = projectId;
+    if (id) {
+      const { error } = await supabase.from('projects').update(payload).eq('id', id);
+      if (error) { setSaveStatus('error'); return; }
+    } else {
+      const { data, error } = await supabase.from('projects').insert(payload).select('id').single();
+      if (error) { setSaveStatus('error'); return; }
+      id = data.id;
+      setCurrentProjectId(id);
+    }
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus(null), 2500);
+    return id;
+  }
+
+  function handleOpenProject(project) {
+    const rd = project.release_data || {};
+    setRelease({ ...defaultRelease, ...rd });
+    setBriefContent(rd.generatedProductBrief || null);
+    setPlaybookContent(rd.generatedMarketingPlaybook || null);
+    setCurrentProjectId(project.id);
+    setView(rd.generatedProductBrief || rd.generatedMarketingPlaybook ? 'documents' : 'intake');
+  }
+
   function handleStartNew() {
     setRelease({ ...defaultRelease });
     setBriefContent(null);
     setPlaybookContent(null);
+    setCurrentProjectId(null);
     setView('input');
   }
 
@@ -418,6 +481,7 @@ export default function App() {
     setRelease(r => ({ ...defaultRelease, ...populated }));
     setBriefContent(null);
     setPlaybookContent(null);
+    setCurrentProjectId(null);
     setView('review');
   }
 
@@ -426,6 +490,7 @@ export default function App() {
     setRelease(sample);
     setBriefContent(null);
     setPlaybookContent(null);
+    setCurrentProjectId(null);
     setView('intake');
   }
 
@@ -454,6 +519,7 @@ export default function App() {
       setPlaybookContent(playbook);
       setRelease(r => ({ ...releaseWithCopy, generatedProductBrief: brief, generatedMarketingPlaybook: playbook }));
       setView('documents');
+      saveProject(releaseWithCopy, brief, playbook, currentProjectId);
     } catch (err) {
       alert('Failed to generate marketing copy: ' + (err.message || 'Unknown error'));
       setView('review');
@@ -479,6 +545,7 @@ export default function App() {
       setRelease({ ...defaultRelease });
       setBriefContent(null);
       setPlaybookContent(null);
+      setCurrentProjectId(null);
       setView('welcome');
     }
   }
@@ -489,10 +556,9 @@ export default function App() {
 
   if (view === 'welcome') {
     return (
-      <WelcomeScreen
+      <ProjectsDashboard
         onNew={handleStartNew}
-        onSample={handleLoadSample}
-        hasSaved={hasSaved}
+        onOpen={handleOpenProject}
       />
     );
   }
@@ -547,6 +613,8 @@ export default function App() {
             onBriefChange={handleBriefChange}
             onPlaybookChange={handlePlaybookChange}
             onBack={() => setView('review')}
+            saveStatus={saveStatus}
+            onSave={() => saveProject(release, briefContent, playbookContent, currentProjectId)}
           />
         )}
 

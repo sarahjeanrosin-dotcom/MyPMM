@@ -23,6 +23,7 @@ export const defaultRelease = {
   competitors: [],
   targetVerticals: [],
   playbookBrief: { keyMessage: '', proofPoints: '', avoid: '' },
+  launchContext: '',
   marketingCopy: null,
   generatedProductBrief: null,
   generatedMarketingPlaybook: null,

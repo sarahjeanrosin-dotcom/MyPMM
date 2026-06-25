@@ -31,7 +31,7 @@ export default async function handler(req, context) {
 
   const { productName, productSuite, releaseDate, productInformation, endUserWhy,
           tierLevel, selectedChannels, competitors, competitivePosition,
-          playbookBrief, targetVerticals } = body;
+          playbookBrief, targetVerticals, launchContext } = body;
 
   // Use explicit channel selection if provided, otherwise fall back to tier defaults
   const channels = (selectedChannels?.length ? selectedChannels : null)
@@ -130,6 +130,10 @@ export default async function handler(req, context) {
     ? `\nTarget Verticals: ${verticals.join(', ')}\nFor each vertical, write a 1-sentence tailored angle in "verticalAngles" showing how this feature solves that vertical's specific pain point.`
     : '';
 
+    const launchContextSection = launchContext
+    ? `\nLaunch Context (internal notes — use to inform tone, timing, and emphasis):\n${launchContext}`
+    : '';
+
   const prompt = `You are a product marketing expert at Genea Security. Write social media copy for this product release.
 
 Product: ${productName}
@@ -138,7 +142,7 @@ Release Date: ${releaseDate}
 Tier: ${tierLevel}
 Tier guidance: ${tierGuidance}
 Summary: ${productInformation}
-End User Value: ${endUserWhy}${briefSection}${competitorSection}${verticalSection}
+End User Value: ${endUserWhy}${briefSection}${competitorSection}${verticalSection}${launchContextSection}
 
 IMPORTANT: Use plain ASCII text only. No smart quotes, em-dashes, special arrows, bullets, or Unicode outside basic ASCII.
 

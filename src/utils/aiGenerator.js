@@ -52,6 +52,7 @@ export async function generateMarketingCopy(release) {
       competitors: release.competitors || [],
       playbookBrief: release.playbookBrief || {},
       targetVerticals: release.targetVerticals || [],
+      launchContext: release.launchContext || '',
       competitivePosition: release.competitors?.length
         ? (() => {
             const known = (release.competitors || []).filter(c => c.hasFeature !== 'unknown');

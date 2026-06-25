@@ -474,6 +474,21 @@ function Step5({ release, onChange }) {
           className="genea-input resize-none font-mono text-sm"
         />
       </FormField>
+
+      <div className="border-t border-gray-200 pt-5">
+        <FormField
+          label="Launch Context"
+          hint="Notes, strategy, stakeholder context, or anything else Claude should know when generating content. This is not published — it only informs the AI."
+        >
+          <textarea
+            value={release.launchContext || ''}
+            onChange={e => onChange({ launchContext: e.target.value })}
+            placeholder={`e.g. We're announcing this at the trade show on June 15th. Sales team needs enablement by June 1st. Key stakeholder: John Smith (VP Sales). Our main competitor Openpath doesn't have this feature yet. Avoid mentioning pricing changes in any copy.`}
+            rows={6}
+            className="genea-input resize-none"
+          />
+        </FormField>
+      </div>
     </div>
   );
 }
