@@ -439,7 +439,7 @@ export default function App() {
       const collateral = release.selectedCollateral || ['brief', 'linkedin', 'youtube'];
       const wantsBrief    = collateral.includes('brief');
       // Any channel key means the user wants the playbook
-      const CHANNEL_KEYS  = ['linkedin', 'instagram', 'youtube', 'email', 'playbook'];
+      const CHANNEL_KEYS  = ['linkedin', 'instagram', 'youtube', 'email', 'inapp', 'playbook'];
       const wantsPlaybook = collateral.some(c => CHANNEL_KEYS.includes(c));
 
       let releaseWithCopy = release;

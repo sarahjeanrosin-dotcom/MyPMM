@@ -443,8 +443,8 @@ export default function MarketingPlaybookPreview({ content, onContentChange }) {
             <div className={`rounded-xl border px-5 py-3 mb-6 text-sm ${bannerStyle}`}>
               <span className="font-semibold">{cfg.label}: </span>
               {cfg.description}
-              {cfg.channels.length > 0 && (
-                <span className="ml-2 font-medium">Channels: {cfg.channels.join(', ')}.</span>
+              {(cfg.collateralDefaults || []).filter(k => k !== 'brief').length > 0 && (
+                <span className="ml-2 font-medium">Channels: {(cfg.collateralDefaults || []).filter(k => k !== 'brief').join(', ')}.</span>
               )}
             </div>
           );

@@ -32,7 +32,7 @@ export async function processRawRelease(rawText, tierLevel = 'Tier 2') {
 
 export async function generateMarketingCopy(release) {
   // Derive channel list from granular selectedCollateral
-  const CHANNEL_MAP = { linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube', email: 'Email' };
+  const CHANNEL_MAP = { linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube', email: 'Email', inapp: 'InApp' };
   const selectedCollateral = release.selectedCollateral || [];
   const selectedChannels = selectedCollateral
     .filter(c => c in CHANNEL_MAP)
