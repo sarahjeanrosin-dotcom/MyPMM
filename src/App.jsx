@@ -243,9 +243,11 @@ function DocumentsView({ release, briefContent, playbookContent, onBriefChange, 
 
   const [activeTab, setActiveTab] = useState(tabs[0]?.id || 'brief');
   const [dlState, setDlState] = useState(null); // 'pdf' | 'word' | null
+  const [dlError, setDlError] = useState(null);
 
   async function handleDownload(format) {
     setDlState(format);
+    setDlError(null);
     try {
       if (format === 'pdf') {
         const logo = await getLogoDataUrl('white');
@@ -264,6 +266,7 @@ function DocumentsView({ release, briefContent, playbookContent, onBriefChange, 
       setTimeout(() => setDlState(null), 2000);
     } catch (err) {
       console.error(err);
+      setDlError(err.message || String(err));
       setDlState(null);
     }
   }
@@ -346,6 +349,12 @@ function DocumentsView({ release, briefContent, playbookContent, onBriefChange, 
         </div>
       </div>
 
+      {dlError && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+          <span className="font-semibold shrink-0">Download error:</span>
+          <span className="font-mono break-all">{dlError}</span>
+        </div>
+      )}
 
       {/* Tab bar */}
       {tabs.length > 1 && (

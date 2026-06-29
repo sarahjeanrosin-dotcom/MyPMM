@@ -1004,6 +1004,7 @@ export function generateMarketingPlaybookPdf(content, logoDataUrl, opts = {}) {
 
   const nonEmailChannels = Object.entries(channels).filter(([k]) => k !== 'Email');
   nonEmailChannels.forEach(([channelName, ch]) => {
+    const accent = channelAccents[channelName] || NAVY;
     doc.addPage();
     header(doc, `Marketing Playbook -- ${channelName}`, logoDataUrl);
     let y = 26;
